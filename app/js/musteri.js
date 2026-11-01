@@ -26,7 +26,7 @@
     render();
     B.ready.then(function(){ return B.ensureCustomer(); }).then(function(){
       if (!alive) return;
-      unsubs.push(B.watchCafe(cafeId, function(d){ st.cafe = d; st.cafeLoaded = true; dropSoldOut(); document.title = ((d && d.name) || "Menü") + " · " + tableLabel; render(); }, fail));
+      unsubs.push(B.watchCafe(cafeId, function(d){ if (d && window.SiralaLang && SiralaLang.addMenu) SiralaLang.addMenu(d.menu, d.catI18n); st.cafe = d; st.cafeLoaded = true; dropSoldOut(); document.title = ((d && d.name) || "Menü") + " · " + tableLabel; render(); }, fail));
       unsubs.push(B.watchPhotos(cafeId, function(m){ st.photos = m; render(); }));
       unsubs.push(B.watchOrders(cafeId, online ? null : { table: String(table) }, function(list){ st.all = list; st.orders = list.filter(function(o){ return online ? mine(o) : String(o.table) === String(table) && o.source !== "online"; }); st.ordLoaded = true; render(); }, fail));
       if (!online) unsubs.push(B.watchTable ? B.watchTable(cafeId, String(table), function(t){ st.tbl = t || {}; markSeated(); render(); }) : B.watchTables(cafeId, function(m){ st.tbl = m[String(table)] || {}; markSeated(); render(); }));

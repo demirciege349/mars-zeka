@@ -42,7 +42,7 @@
       subscribe();
     });
     function subscribe(){
-      unsubs.push(B.watchCafe(cafeId, function(d){
+      unsubs.push(B.watchCafe(cafeId, function(d){ if (d && window.SiralaLang && SiralaLang.addMenu) SiralaLang.addMenu(d.menu, d.catI18n);
         st.cafe = d; st.cafeLoaded = true;
         st.denied = !!(d && B.kind === "firebase" && (d.staffEmails || []).indexOf(st.user.email) < 0) && "Bu hesap bu işletmenin çalışanları arasında değil.";
         document.title = "Mars Zeka · " + ((d && d.name) || cafeId); render();

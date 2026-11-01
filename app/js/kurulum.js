@@ -61,15 +61,40 @@
       var b = document.querySelector('[data-act="saveMenu"]'); if (b) b.disabled = false;
       var p = S.$("dirty"); if (p) p.hidden = false;
     }
+    /* Menü dosyası (Mars Zeka menü dosyası, .json): aynı adlı ürünler güncellenir, yeniler eklenir; fotoğraflar korunur. */
+    function algKey(a){ var s = String(a || "").trim().toLocaleLowerCase("tr-TR"); var f = S.ALLERGENS.find(function(z){ return z[0] === s || z[1].toLocaleLowerCase("tr-TR") === s; }); return f ? f[0] : null; }
+    function normI18n(c){ var o = {}; Object.keys(c || {}).forEach(function(l){ var v = c[l] || {}; if (["en","es","de","ru","zh"].indexOf(l) < 0) return; o[l] = { name: String(v.ad || v.name || "").slice(0, 60), desc: String(v.aciklama || v.desc || "").slice(0, 120) }; }); return o; }
+    function importMenu(file){
+      file.text().then(function(txt){
+        var j = JSON.parse(txt), list = j && (j.urunler || j.items);
+        if (!Array.isArray(list) || !list.length) throw new Error("bos");
+        ensureDraft(); var added = 0, updated = 0;
+        list.forEach(function(r){
+          var name = String(r.ad || r.name || "").trim(); if (!name) return;
+          var item = {
+            name: name, cat: String(r.kategori || r.cat || "Diğer").trim(), price: Number(r.fiyat != null ? r.fiyat : r.price) || 0, p15: Number(r.fiyat15 != null ? r.fiyat15 : r.p15) || 0,
+            mins: Number(r.sure != null ? r.sure : r.mins) || S.DEFAULT_MINS, desc: String(r.aciklama || r.desc || ""), amount: String(r.porsiyon || r.amount || ""), kcal: Number(r.kalori != null ? r.kalori : r.kcal) || 0,
+            allergens: (r.alerjenler || r.allergens || []).map(algKey).filter(Boolean), i18n: normI18n(r.ceviri || r.i18n)
+          };
+          var ex = st.draft.find(function(x){ return String(x.name).trim().toLocaleLowerCase("tr-TR") === name.toLocaleLowerCase("tr-TR"); });
+          if (ex) { Object.assign(ex, item); updated++; } else { item.id = S.newId(); item.out = false; st.draft.push(item); added++; }
+        });
+        if (j.kategoriCeviri || j.catI18n) st.catI18n = Object.assign({}, (st.cafe && st.cafe.catI18n) || {}, j.kategoriCeviri || j.catI18n);
+        st.dirty = true; render(true);
+        S.toast((added ? added + " ürün eklendi" : "") + (added && updated ? ", " : "") + (updated ? updated + " ürün güncellendi" : "") + ". Kontrol edip Menüyü kaydet'e bas.");
+      }).catch(function(){ S.toast("Bu dosya bir Mars Zeka menü dosyası değil."); });
+    }
     function saveMenu(){
       if (!st.draft) return;
       var clean = st.draft.map(function(x){ return {
         id: x.id || S.newId(), name: String(x.name || "").trim().slice(0, 48), cat: String(x.cat || "").trim().slice(0, 30) || "Diğer",
         price: Math.max(0, Math.round(Number(x.price) || 0)), p15: Math.max(0, Math.round(Number(x.p15) || 0)), kcal: Math.max(0, Math.round(Number(x.kcal) || 0)), mins: Math.max(1, Math.min(180, Math.round(Number(x.mins) || S.DEFAULT_MINS))),
         desc: String(x.desc || "").trim().slice(0, 90), model: String(x.model || "").trim().slice(0, 300), amount: String(x.amount || "").trim().slice(0, 40),
-        allergens: (x.allergens || []).filter(function(a){ return S.ALLERGENS.some(function(z){ return z[0] === a; }); }), out: !!x.out
+        allergens: (x.allergens || []).filter(function(a){ return S.ALLERGENS.some(function(z){ return z[0] === a; }); }), out: !!x.out,
+        i18n: x.i18n && typeof x.i18n === "object" ? x.i18n : {}
       }; }).filter(function(x){ return x.name; });
-      B.updateCafe(cafeId, { menu: clean }).then(function(){ st.draft = null; st.dirty = false; S.toast("Menü kaydedildi, telefonlara yansıdı"); render(true); }).catch(function(e){ S.toast(S.errText(e)); });
+      var patch = { menu: clean }; if (st.catI18n) patch.catI18n = st.catI18n;
+      B.updateCafe(cafeId, patch).then(function(){ st.draft = null; st.dirty = false; st.catI18n = null; S.toast("Menü kaydedildi, telefonlara yansıdı"); render(true); }).catch(function(e){ S.toast(S.errText(e)); });
     }
     function uploadPhoto(itemId, file){
       S.toast("Fotoğraf yükleniyor…");
@@ -166,6 +191,7 @@
         }).join("") : '<p class="muted">Menü boş. "Ürün ekle" ile başlayın ya da örnek menüyü yükleyin.</p>') +
         '</div><datalist id="cats">' + cats.map(function(c){ return '<option value="' + S.esc(c) + '"></option>'; }).join("") + '</datalist>' +
         '<div class="row-btns"><button class="btn" data-act="addRow">Ürün ekle</button>' + (d.length ? '' : '<button class="btn" data-act="sample">Örnek menüyü yükle</button>') +
+          '<label class="btn" for="menuFile" style="position:relative">Menüyü dosyadan yükle<input id="menuFile" type="file" accept="application/json,.json" style="position:absolute;width:1px;height:1px;opacity:0"></label>' +
         '<button class="btn btn-primary" data-act="saveMenu"' + (st.dirty ? "" : " disabled") + '>Menüyü kaydet</button></div></section>' +
 
         '<section class="s-sec"><div class="s-sec-head"><h2>Masa QR kartları</h2><div class="row-btns no-print"><button class="btn" data-act="dlqr">PNG olarak indir</button>' + (ctx.canPrint ? '<button class="btn" data-act="print">Yazdır</button>' : '') + '</div></div>' +
@@ -218,6 +244,7 @@
         ensureDraft(); var p = t.dataset.alg.split("."), it = st.draft[Number(p[0])]; if (!it) return;
         var l = (it.allergens || []).filter(function(a){ return a !== p[1]; }); if (t.checked) l.push(p[1]); it.allergens = l; markDirty(); return;
       }
+      if (t.id === "menuFile" && t.files && t.files[0]) { var mf = t.files[0]; t.value = ""; importMenu(mf); return; }
       if (!t.dataset || !t.dataset.photo || !t.files || !t.files[0]) return;
       if (st.draft && st.draft[Number(t.dataset.i)] && !menu().some(function(m){ return m.id === t.dataset.photo; })) markDirty();
       uploadPhoto(t.dataset.photo, t.files[0]); t.value = "";
