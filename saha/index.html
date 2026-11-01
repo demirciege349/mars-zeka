@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Saha Defteri">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="local-store.js"></script>
+</head>
+<body>
+<title>Mars Zeka Saha Defteri</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Yerleşim: saha not defteri — kareli kağıt zemin, üstte yapışkan şerit; liste görünümü (özet + kartlar) ve tek ziyaretin soru formu (bölüm bölüm, yazdıkça kaydedilir). */
+:root{
+  --bg:#F3F1EC; --grid:rgba(30,26,29,.045); --surface:#FFFFFF; --ink:#1E1A1D; --muted:#6B6460; --line:#E1DBD1; --line-2:#CFC6B8;
+  --mars:#C2412A; --mars-ink:#FFFFFF; --mars-soft:#F7E2DC; --plum:#3A1F2E;
+  --ok:#2F6B45; --ok-soft:#E1EFE5; --warn:#9A6211; --warn-soft:#F8EBD3; --bad:#A3311F; --bad-soft:#F7DEDA; --idle:#5C6170; --idle-soft:#E7E8EC;
+  --f-d:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-b:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-m:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141113; --grid:rgba(241,236,230,.035); --surface:#1E1A1C; --ink:#F1ECE6; --muted:#A79F99; --line:#332D30; --line-2:#463E42;
+  --mars:#E8664C; --mars-ink:#1A0D0A; --mars-soft:#3A1E19; --plum:#E9C9D6;
+  --ok:#7FC79A; --ok-soft:#1C3024; --warn:#E7B666; --warn-soft:#352816; --bad:#F08B79; --bad-soft:#3A1C18; --idle:#B4B8C4; --idle-soft:#262830; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141113; --grid:rgba(241,236,230,.035); --surface:#1E1A1C; --ink:#F1ECE6; --muted:#A79F99; --line:#332D30; --line-2:#463E42;
+  --mars:#E8664C; --mars-ink:#1A0D0A; --mars-soft:#3A1E19; --plum:#E9C9D6;
+  --ok:#7FC79A; --ok-soft:#1C3024; --warn:#E7B666; --warn-soft:#352816; --bad:#F08B79; --bad-soft:#3A1C18; --idle:#B4B8C4; --idle-soft:#262830; color-scheme:dark}
+*{box-sizing:border-box}
+body{background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:22px 22px;color:var(--ink);font:16px/1.55 var(--f-b);min-height:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-family:var(--f-d);line-height:1.1;text-wrap:balance}
+p{margin:0}
+:focus-visible{outline:2px solid var(--mars);outline-offset:2px}
+.wrap{max-width:880px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* üst şerit */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px;min-height:60px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;text-decoration:none;color:inherit}
+.brand svg{flex:none}
+.brand b{font-family:var(--f-d);font-weight:800;font-size:1.12rem;letter-spacing:-.01em;white-space:nowrap}
+.brand small{display:block;font-family:var(--f-m);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.top .grow{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--mars);border-color:var(--mars);color:var(--mars-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn[disabled]{opacity:.5;cursor:default}
+.btn svg{flex:none}
+
+/* liste görünümü */
+main{padding-block:22px 80px;display:flex;flex-direction:column;gap:22px}
+.hello{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.hello h1{font-size:clamp(1.9rem,5vw,2.6rem);font-weight:800;letter-spacing:-.02em}
+.hello p{color:var(--muted);max-width:52ch}
+.statbar{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:.9rem;font-weight:500}
+.chip .n{font-family:var(--f-m);font-size:.78rem;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chip[aria-pressed="true"] .n{color:var(--bg);opacity:.75}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.searchrow{display:flex;gap:10px;flex-wrap:wrap}
+.search{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:0 12px;min-height:44px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface)}
+.search input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:10px 0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.next h2{font-size:1.05rem;font-weight:700;margin-bottom:10px}
+.next ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.next li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:baseline}
+.next li a{color:inherit;text-decoration:none;font-weight:600}
+.next li a:hover{text-decoration:underline}
+.next .when{font-family:var(--f-m);font-size:.78rem;padding:2px 8px;border-radius:6px;background:var(--idle-soft);color:var(--idle);white-space:nowrap}
+.next .when.late{background:var(--bad-soft);color:var(--bad)}
+.next .when.today{background:var(--warn-soft);color:var(--warn)}
+.next small{grid-column:2;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:14px}
+.card{display:flex;flex-direction:column;gap:10px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;cursor:pointer;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--line-2);transform:translateY(-1px)}
+.card .row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card h3{font-size:1.25rem;font-weight:700;min-width:0;overflow-wrap:anywhere}
+.card .where{color:var(--muted);font-size:.9rem}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.84rem;color:var(--muted)}
+.card .meta b{color:var(--ink);font-weight:600;font-family:var(--f-m);font-size:.8rem}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:600;white-space:nowrap}
+.s-kesif{background:var(--idle-soft);color:var(--idle)}
+.s-demo{background:var(--warn-soft);color:var(--warn)}
+.s-teklif{background:var(--mars-soft);color:var(--mars)}
+.s-pilot{background:var(--ok-soft);color:var(--ok)}
+.s-anlastik{background:var(--ok);color:var(--surface)}
+.s-olmadi{background:var(--bad-soft);color:var(--bad)}
+.prog{display:flex;align-items:center;gap:10px;font-family:var(--f-m);font-size:.76rem;color:var(--muted)}
+.bar{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--mars);border-radius:3px}
+.bar i.full{background:var(--ok)}
+.sample-tag{font-family:var(--f-m);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--warn);border:1px dashed currentColor;border-radius:999px;padding:2px 8px}
+.empty{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:26px;background:var(--surface);border:1.5px dashed var(--line-2);border-radius:var(--r)}
+.empty h2{font-size:1.3rem}
+.empty p{color:var(--muted);max-width:56ch}
+.bring summary{cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.bring summary::-webkit-details-marker{display:none}
+.bring summary::after{content:"+";font-family:var(--f-m);color:var(--muted)}
+.bring[open] summary::after{content:"−"}
+.bring ul{margin:12px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
+.bring li b{color:var(--ink)}
+.note{font-size:.86rem;color:var(--muted)}
+.banner{padding:12px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn);font-size:.92rem}
+
+/* form görünümü */
+.formhead{display:flex;flex-direction:column;gap:12px}
+.backrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.save{font-family:var(--f-m);font-size:.76rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.save.ok{color:var(--ok)}.save.err{color:var(--bad)}
+.titlein{width:100%;border:0;border-bottom:2px solid var(--line-2);background:transparent;padding:6px 0;font-family:var(--f-d);font-weight:800;font-size:clamp(1.7rem,5vw,2.3rem);letter-spacing:-.02em;outline:0}
+.titlein:focus{border-bottom-color:var(--mars)}
+.titlein::placeholder{color:var(--line-2)}
+.jump{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.jump::-webkit-scrollbar{display:none}
+.jump a{flex:none;text-decoration:none;color:var(--muted);font-size:.84rem;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);display:inline-flex;gap:6px;align-items:center}
+.jump a .c{font-family:var(--f-m);font-size:.72rem}
+.jump a.done{color:var(--ok);border-color:var(--ok)}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:18px;scroll-margin-top:80px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.sec-h h2{font-size:1.25rem;font-weight:700}
+.sec-h span{font-family:var(--f-m);font-size:.74rem;color:var(--muted);white-space:nowrap}
+.sec-h p{grid-column:1/-1}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 16px}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.f.wide{grid-column:1/-1}
+@media (max-width:620px){.fgrid{grid-template-columns:minmax(0,1fr)}}
+.f label,.f .lbl{font-weight:600;font-size:.95rem;display:flex;align-items:center;gap:6px}
+.f label .key,.f .lbl .key{width:6px;height:6px;border-radius:50%;background:var(--mars);flex:none}
+.f.filled label .key,.f.filled .lbl .key{background:var(--ok)}
+.f .why{font-size:.8rem;color:var(--muted);line-height:1.4}
+.f input[type=text],.f input[type=tel],.f input[type=number],.f input[type=date],.f textarea{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg);outline:0}
+.f input:focus,.f textarea:focus{border-color:var(--mars);background:var(--surface)}
+.f textarea{min-height:92px;resize:vertical;line-height:1.5}
+.f input[type=number]{font-family:var(--f-m);max-width:180px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--bg);cursor:pointer;font-size:.92rem;-webkit-tap-highlight-color:transparent}
+.opt[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);font-weight:600}
+.scale{display:flex;gap:6px}
+.scale .opt{width:46px;padding:0;font-family:var(--f-m)}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.ph{position:relative;aspect-ratio:4/3;max-width:100%;border-radius:10px;overflow:hidden;background:var(--bg);border:1px solid var(--line)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph button{position:absolute;top:6px;right:6px;min-height:30px;padding:0 10px;border-radius:8px;border:0;background:rgba(20,17,19,.72);color:#fff;font-size:.78rem;cursor:pointer}
+.ph .confirm{background:var(--bad)}
+.addph{aspect-ratio:4/3;border-radius:10px;border:1.5px dashed var(--line-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;color:var(--muted);font-size:.88rem;text-align:center;padding:8px;background:var(--bg)}
+.addph:hover{border-color:var(--mars);color:var(--mars)}
+.addph input{position:absolute;width:1px;height:1px;opacity:0}
+.dz{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--bad-soft);border-radius:var(--r);padding:14px 16px;background:var(--surface)}
+.dz p{color:var(--muted);font-size:.9rem}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.92rem;z-index:50;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <svg width="34" height="34" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#3A0A0A"/><g transform="rotate(-18 256 256)"><path d="M86 256a170 52 0 0 1 340 0" fill="none" stroke="#F2E3C6" stroke-width="16" stroke-linecap="round" opacity=".55"/><circle cx="256" cy="256" r="118" fill="#D64E38"/><circle cx="214" cy="222" r="22" fill="#B23A27"/><circle cx="292" cy="296" r="14" fill="#B23A27"/><path d="M426 256a170 52 0 0 1-340 0" fill="none" stroke="#F2E3C6" stroke-width="16" stroke-linecap="round"/></g></svg>
+      <span><small>Mars Zeka</small><b>Saha Defteri</b></span>
+    </a>
+    <span class="grow"></span>
+    <button class="btn primary" id="newBtn" type="button" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Yeni ziyaret
+    </button>
+  </div>
+</header>
+
+<main class="wrap" id="view">
+  <div class="hello">
+    <div>
+      <h1>Restoran ziyaretleri</h1>
+      <p>Her restoranda sorulacaklar burada sırayla duruyor. Yazdıkça kaydedilir.</p>
+    </div>
+  </div>
+  <div class="empty"><h2>Ziyaretler yükleniyor…</h2><p>Kayıtlar birkaç saniye içinde gelir.</p></div>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- soru şeması: her restoranda not alınacaklar ---------- */
+  var STATUS = [
+    ["kesif", "Keşif"], ["demo", "Demo gösterildi"], ["teklif", "Teklif verildi"],
+    ["pilot", "Pilot"], ["anlastik", "Anlaştık"], ["olmadi", "Olmadı"]
+  ];
+  var PROBLEMS = ["Sipariş karışıyor", "Garson yetişemiyor", "Müşteri garson bekliyor", "Mutfakta süre belli değil", "Hesap uzun sürüyor", "Yabancı müşteriyle anlaşmak zor", "Menü ve fiyat güncellemek zor"];
+  var SECTIONS = [
+    { id: "restoran", title: "Restoran", fields: [
+      { k: "address", t: "text", label: "Adres / semt", ph: "ör. Odunpazarı, Ateşbaz Sk." },
+      { k: "contact", t: "text", label: "Görüştüğün kişi", ph: "ör. Mehmet Bey", key: 1 },
+      { k: "role", t: "choice", label: "Görevi", opts: ["Sahibi", "Müdür", "Şef", "Garson"] },
+      { k: "phone", t: "tel", label: "Telefon", ph: "05xx xxx xx xx", key: 1, why: "Kurulum günü ve pilot için." },
+      { k: "date", t: "date", label: "Ziyaret tarihi" },
+      { k: "status", t: "choice", label: "Durum", opts: STATUS.map(function(s){ return s[1]; }), vals: STATUS.map(function(s){ return s[0]; }), wide: 1 }
+    ]},
+    { id: "mekan", title: "Mekân ve masalar", fields: [
+      { k: "tables", t: "number", label: "Masa sayısı", key: 1, why: "Kaç QR kartı basılacağı buna göre." },
+      { k: "tableNumbers", t: "choice", label: "Masalarda numara var mı?", opts: ["Var", "Kısmen", "Yok"], key: 1, why: "Yoksa kartla birlikte numara da götür." },
+      { k: "areas", t: "text", label: "Bahçe, teras, kat", ph: "ör. bahçede 6 masa", why: "Garson bölgeleri bunlara göre ayrılır." },
+      { k: "busy", t: "text", label: "Yoğun saatler", ph: "ör. Cuma–Cumartesi 19:00–22:00", why: "Kurulumu en sakin saate koy, ilk hafta yoğun saatte yanlarında ol." }
+    ]},
+    { id: "menu", title: "Menü", fields: [
+      { k: "items", t: "number", label: "Menüde kaç ürün var?", key: 1, why: "Menü girişinin kaç saat süreceğini gösterir." },
+      { k: "menuPhoto", t: "choice", label: "Menünün fotoğrafını çektin mi?", opts: ["Çektim", "Sonra yollayacaklar"], key: 1, why: "Fiyatları buradan gireceksin; aşağıya fotoğraf olarak ekle." },
+      { k: "foodPhotos", t: "choice", label: "Yemek fotoğrafları", opts: ["Hazır var", "Ben çekeceğim", "Yok"] },
+      { k: "prepTimes", t: "choice", label: "Çıkış süreleri ustadan alındı mı?", opts: ["Alındı", "Sonra"], key: 1, why: "Müşteriye gösterilen \"~20 dk\" buradan gelir." },
+      { k: "allergens", t: "choice", label: "Alerjen bilgisi var mı?", opts: ["Var", "Yok"] },
+      { k: "tourists", t: "choice", label: "Yabancı müşteri geliyor mu?", opts: ["Çok", "Bazen", "Hiç"], why: "Çoksa 6 dilli menüyü öne çıkar." }
+    ]},
+    { id: "cihaz", title: "İnternet ve cihazlar", fields: [
+      { k: "wifi", t: "choice", label: "Wi-Fi var mı?", opts: ["Var", "Yok"], key: 1 },
+      { k: "kitchenSignal", t: "choice", label: "Mutfakta internet çekiyor mu?", opts: ["İyi", "Zayıf", "Çekmiyor"], key: 1, why: "Telefonla mutfakta bir sayfa açıp dene." },
+      { k: "kitchenDevice", t: "choice", label: "Mutfak ekranı için cihaz", opts: ["Tablet var", "Eski telefon var", "Alınması lazım"], key: 1 },
+      { k: "socket", t: "choice", label: "Mutfakta uygun priz var mı?", opts: ["Var", "Yok"] },
+      { k: "phones", t: "choice", label: "Garsonların telefonu", opts: ["Çoğu Android", "Çoğu iPhone", "Karışık", "Kendi telefonunu kullanmak istemiyor"] }
+    ]},
+    { id: "ekip", title: "Ekip", fields: [
+      { k: "waiters", t: "number", label: "Garson sayısı", key: 1, why: "Patron her birine kullanıcı adı açacak." },
+      { k: "cooks", t: "number", label: "Mutfakta kaç kişi?" },
+      { k: "techLevel", t: "choice", label: "Ekip telefona ne kadar alışık?", opts: ["Rahat", "Orta", "Zorlanır"], why: "Zorlanıyorsa eğitime fazla zaman ayır." }
+    ]},
+    { id: "duzen", title: "Şu anki düzen", fields: [
+      { k: "pos", t: "text", label: "Adisyon / POS programı", ph: "ör. Adisyo, SambaPOS, yok", key: 1, why: "Gün sonu satış dökümünü bu programa girecekler." },
+      { k: "orderNow", t: "choice", label: "Sipariş şu an nasıl alınıyor?", opts: ["Kağıt adisyon", "El terminali", "Ezbere", "Diğer"], key: 1 },
+      { k: "split", t: "choice", label: "Hesap bölme sık oluyor mu?", opts: ["Sık", "Bazen", "Nadiren"] }
+    ]},
+    { id: "sorunlar", title: "Sorunlar", fields: [
+      { k: "problems", t: "multi", label: "Neler sıkıntı?", opts: PROBLEMS, key: 1, wide: 1, why: "Sunumda bunlara göre konuş; birden çok seçebilirsin." },
+      { k: "problemNote", t: "textarea", label: "Kendi sözleriyle", ph: "Restoranın anlattığı gibi yaz", wide: 1 }
+    ]},
+    { id: "sonuc", title: "Sonuç ve sonraki adım", fields: [
+      { k: "interest", t: "scale", label: "İlgi düzeyi", key: 1, why: "1 hiç ilgilenmedi, 5 hemen başlamak istiyor." },
+      { k: "decider", t: "text", label: "Kararı kim veriyor?", ph: "ör. ortağı, kendisi" },
+      { k: "objections", t: "textarea", label: "Soruları ve itirazları", ph: "ör. \"Garsonlar alışamaz\", \"İnternet giderse?\"", wide: 1 },
+      { k: "nextStep", t: "text", label: "Sonraki adım", ph: "ör. Pazartesi menü fotoğrafları gelecek", key: 1, wide: 1 },
+      { k: "nextDate", t: "date", label: "Sonraki adım tarihi", key: 1 },
+      { k: "pilotDate", t: "date", label: "Pilot başlangıcı" }
+    ]},
+    { id: "foto", title: "Fotoğraflar", photos: 1, fields: [] },
+    { id: "notlar", title: "Notlar", fields: [
+      { k: "notes", t: "textarea", label: "Aklına gelen her şey", ph: "Mekânın havası, rakip sistemler, dikkat edilecekler…", wide: 1 }
+    ]}
+  ];
+  var ALLF = []; SECTIONS.forEach(function(s){ s.fields.forEach(function(f){ ALLF.push(f); }); });
+  var KEYF = ALLF.filter(function(f){ return f.key; });
+
+  /* ---------- yardımcılar ---------- */
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var today = function(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+  var newId = function(){ return "v" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); };
+  function filled(v, f){ if (f && f.t === "multi") return Array.isArray(v) && v.length > 0; return v !== undefined && v !== null && String(v).trim() !== ""; }
+  function progress(d){ var n = 0; KEYF.forEach(function(f){ if (filled(d[f.k], f)) n++; }); if (filled(d.name)) n++; return { n: n, of: KEYF.length + 1 }; }
+  function statusLabel(v){ var s = STATUS.filter(function(x){ return x[0] === v; })[0]; return s ? s[1] : "Keşif"; }
+  function fmtDate(iso){ if (!iso) return ""; var p = iso.split("-"); var m = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"][Number(p[1]) - 1]; return Number(p[2]) + " " + m; }
+  function phSrc(id){ return (window.SAHA_BLOB && window.SAHA_BLOB(id)) || "/_blob/" + id; }
+  var toastT = null;
+  function toast(msg){ var t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(function(){ t.hidden = true; }, 2600); }
+
+  /* ---------- durum ---------- */
+  var st = { db: null, assets: null, loaded: false, slow: false, readOnly: false, err: "", visits: {}, filter: "all", q: "",
+    cur: null, draft: null, dirty: false, saving: false, saveState: "", confirmDel: false, confirmPh: null, uploading: 0 };
+
+  /* ---------- kayıt (belge başına tek yazma) ---------- */
+  var saveTimer = null;
+  function schedule(){ st.dirty = true; setSave("Kaydediliyor…", ""); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 700); }
+  function flush(){
+    if (!st.db || !st.cur || st.saving || !st.dirty) return;
+    st.saving = true; st.dirty = false;
+    var id = st.cur, body = JSON.parse(JSON.stringify(st.draft)); body.updatedAt = Date.now();
+    st.db.collection("visits").doc(id).set(body).then(function(){
+      st.saving = false;
+      if (st.dirty) { flush(); return; }
+      setSave("Kaydedildi", "ok");
+    }).catch(function(e){
+      st.saving = false; st.dirty = true;
+      if (e && e.code === "invalid_argument") { st.readOnly = true; setSave("Bu defterde değişiklik yapma iznin yok", "err"); return; }
+      if (e && e.code === "quota_exceeded") { setSave("Depolama dolu; eski ziyaretleri silmen gerekiyor", "err"); return; }
+      setSave("Kaydedilemedi, tekrar deneniyor…", "err");
+      setTimeout(flush, 2500 + Math.random() * 1500);
+    });
+  }
+  function setSave(text, cls){ st.saveState = text; var el = $("saveState"); if (el) { el.textContent = text; el.className = "save " + cls; } }
+  window.addEventListener("beforeunload", function(){ if (st.dirty) flush(); });
+
+  /* ---------- yönlendirme ---------- */
+  function route(){
+    var h = (location.hash || "").replace(/^#/, ""), m = /^ziyaret-([a-z0-9]+)$/.exec(h);
+    if (st.cur && st.dirty) { clearTimeout(saveTimer); flush(); }
+    if (m) {
+      if (st.cur !== m[1]) {
+        st.cur = m[1]; st.confirmDel = false; st.confirmPh = null;
+        var v = st.visits[m[1]]; st.draft = v ? JSON.parse(JSON.stringify(v)) : null; st.dirty = false; st.saveState = "";
+      }
+    } else { st.cur = null; st.draft = null; }
+    render(); window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", route);
+
+  /* ---------- çizim ---------- */
+  function render(){
+    var view = $("view");
+    $("newBtn").disabled = !st.db || st.readOnly;
+    if (st.cur) { view.innerHTML = formHtml(); afterForm(); return; }
+    view.innerHTML = listHtml();
+  }
+
+  function listHtml(){
+    var all = Object.keys(st.visits).map(function(k){ return st.visits[k]; });
+    var head = '<div class="hello"><div><h1>Restoran ziyaretleri</h1><p>Her restoranda sorulacaklar burada sırayla duruyor. Yazdıkça kaydedilir; telefonda da bilgisayarda da aynı kayıtları görürsün.</p></div></div>';
+    var bring = '<details class="panel bring"><summary>Ziyarete giderken yanına al</summary><ul>' +
+      '<li><b>Demo açık telefon:</b> misafir menüsü ve garson ekranı hazır dursun.</li>' +
+      '<li><b>Örnek QR kartı:</b> masaya koyup okutmalarını iste.</li>' +
+      '<li><b>Sunum:</b> 10 dakikalık Mars Zeka sunumu.</li>' +
+      '<li><b>Dolu şarj:</b> menü ve mutfak fotoğrafı çekeceksin, interneti mutfakta deneyeceksin.</li></ul></details>' +
+      (window.SAHA_LOCAL ? '<section class="panel bring"><div class="sec-h" style="border:0;padding:0"><h2 style="font-size:1.05rem">Yedek</h2></div><p class="note" style="margin:6px 0 12px">Kayıtlar bu cihazda duruyor. Ara sıra yedek al; başka cihaza geçerken yedeği orada yükle.</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" data-act="backup">Yedek al</button><label class="btn" for="restoreIn" style="position:relative">Yedeği yükle<input id="restoreIn" type="file" accept="application/json,.json" style="position:absolute;width:1px;height:1px;opacity:0"></label></div></section>' : '');
+    if (!st.db) {
+      return head + '<div class="empty"><h2>' + (st.loaded ? "Kayıtlara ulaşılamıyor" : "Bağlanıyor…") + '</h2><p>' + (st.loaded ? "Bu sayfayı Claude'da giriş yapmış olarak aç. Kayıtlar orada saklanıyor." : "Kayıtlar birkaç saniye içinde gelir.") + '</p></div>' + bring;
+    }
+    if (!st.loaded) return head + '<div class="empty"><h2>' + (st.slow ? "Kayıtlara henüz ulaşılamadı" : "Ziyaretler yükleniyor…") + '</h2><p>' + (st.slow ? "İnternet bağlantını kontrol et; bağlantı gelince liste kendiliğinden dolar." : "Kayıtlar birkaç saniye içinde gelir.") + '</p></div>' + bring;
+    if (!all.length) return head + '<div class="empty"><h2>Henüz ziyaret yok</h2><p>Restorana girdiğinde sağ üstteki <b>Yeni ziyaret</b>e bas. Sorular bölüm bölüm gelir; boş bıraktıkların sonra da doldurulabilir.</p>' +
+      (st.readOnly ? '' : '<button class="btn primary" type="button" data-act="new">Yeni ziyaret</button>') + '</div>' + bring;
+
+    var counts = { all: all.length }; STATUS.forEach(function(s){ counts[s[0]] = 0; });
+    all.forEach(function(v){ counts[v.status || "kesif"]++; });
+    var chips = '<div class="statbar" role="group" aria-label="Duruma göre süz">' +
+      '<button class="chip" type="button" data-act="filter" data-v="all" aria-pressed="' + (st.filter === "all") + '">Hepsi <span class="n">' + counts.all + '</span></button>' +
+      STATUS.filter(function(s){ return counts[s[0]]; }).map(function(s){ return '<button class="chip" type="button" data-act="filter" data-v="' + s[0] + '" aria-pressed="' + (st.filter === s[0]) + '"><span class="dot s-' + s[0] + '" style="background:currentColor"></span>' + s[1] + ' <span class="n">' + counts[s[0]] + '</span></button>'; }).join("") + '</div>';
+
+    var t = today();
+    var upcoming = all.filter(function(v){ return v.nextDate && v.status !== "olmadi" && v.status !== "anlastik"; }).sort(function(a, b){ return a.nextDate < b.nextDate ? -1 : 1; }).slice(0, 4);
+    var next = upcoming.length ? '<section class="panel next"><h2>Sıradaki adımlar</h2><ul>' + upcoming.map(function(v){
+      var cls = v.nextDate < t ? "late" : v.nextDate === t ? "today" : "";
+      return '<li><span class="when ' + cls + '">' + (cls === "late" ? "Gecikti · " : cls === "today" ? "Bugün · " : "") + fmtDate(v.nextDate) + '</span><a href="#ziyaret-' + esc(v.id) + '">' + esc(v.name || "İsimsiz restoran") + '</a><small>' + esc(v.nextStep || "Sonraki adım yazılmamış") + '</small></li>';
+    }).join("") + '</ul></section>' : '';
+
+    var q = st.q.trim().toLocaleLowerCase("tr-TR");
+    var list = all.filter(function(v){ return (st.filter === "all" || (v.status || "kesif") === st.filter) && (!q || ((v.name || "") + " " + (v.address || "") + " " + (v.contact || "")).toLocaleLowerCase("tr-TR").indexOf(q) >= 0); })
+      .sort(function(a, b){ return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    var cards = list.length ? '<div class="cards">' + list.map(cardHtml).join("") + '</div>' : '<p class="note">Bu aramaya uyan ziyaret yok.</p>';
+    return head + next + '<div class="searchrow"><label class="search" for="q"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Restoran, semt ya da kişi ara" value="' + esc(st.q) + '" autocomplete="off"></label></div>' + chips + cards + bring;
+  }
+  function cardHtml(v){
+    var p = progress(v), pct = Math.round(p.n / p.of * 100), s = v.status || "kesif";
+    var meta = [];
+    if (filled(v.tables)) meta.push('<span><b>' + esc(v.tables) + '</b> masa</span>');
+    if (filled(v.waiters)) meta.push('<span><b>' + esc(v.waiters) + '</b> garson</span>');
+    if (filled(v.interest)) meta.push('<span>İlgi <b>' + esc(v.interest) + '/5</b></span>');
+    if (v.date) meta.push('<span>' + fmtDate(v.date) + '</span>');
+    return '<a class="card" href="#ziyaret-' + esc(v.id) + '"><div class="row"><div style="min-width:0"><h3>' + esc(v.name || "İsimsiz restoran") + '</h3>' + (v.address ? '<p class="where">' + esc(v.address) + '</p>' : '') + '</div>' +
+      '<span class="pill s-' + s + '">' + esc(statusLabel(s)) + '</span></div>' +
+      (v.sample ? '<span class="sample-tag" style="align-self:flex-start">Örnek kayıt · silebilirsin</span>' : '') +
+      (meta.length ? '<div class="meta">' + meta.join("") + '</div>' : '') +
+      '<div class="prog"><span class="bar"><i class="' + (p.n === p.of ? "full" : "") + '" style="width:' + pct + '%"></i></span>' + p.n + '/' + p.of + ' temel bilgi</div></a>';
+  }
+
+  function fieldHtml(f, d){
+    var v = d[f.k], fl = filled(v, f), id = "f-" + f.k;
+    var lab = (f.key ? '<span class="key" aria-hidden="true"></span>' : '') + esc(f.label);
+    var why = f.why ? '<p class="why">' + esc(f.why) + '</p>' : '';
+    var cls = "f" + (f.wide || f.t === "textarea" || f.t === "multi" ? " wide" : "") + (fl ? " filled" : "");
+    var dis = st.readOnly ? " disabled" : "";
+    if (f.t === "choice" || f.t === "multi" || f.t === "scale") {
+      var opts = f.t === "scale" ? ["1", "2", "3", "4", "5"] : f.opts, vals = f.vals || opts;
+      var on = function(i){ return f.t === "multi" ? (Array.isArray(v) && v.indexOf(vals[i]) >= 0) : String(v) === String(vals[i]); };
+      return '<div class="' + cls + '" data-wrap="' + f.k + '" role="group" aria-labelledby="' + id + '"><span class="lbl" id="' + id + '">' + lab + '</span><div class="' + (f.t === "scale" ? "scale" : "opts") + '">' +
+        opts.map(function(o, i){ return '<button class="opt" type="button" data-act="pick" data-k="' + f.k + '" data-v="' + esc(vals[i]) + '" aria-pressed="' + on(i) + '"' + dis + '>' + esc(o) + '</button>'; }).join("") + '</div>' + why + '</div>';
+    }
+    var input = f.t === "textarea"
+      ? '<textarea id="' + id + '" data-k="' + f.k + '" placeholder="' + esc(f.ph || "") + '"' + dis + '>' + esc(v || "") + '</textarea>'
+      : '<input id="' + id + '" data-k="' + f.k + '" type="' + f.t + '"' + (f.t === "number" ? ' inputmode="numeric" min="0" step="1"' : '') + (f.t === "tel" ? ' inputmode="tel" autocomplete="off"' : '') + ' placeholder="' + esc(f.ph || "") + '" value="' + esc(v || "") + '"' + dis + '>';
+    return '<div class="' + cls + '" data-wrap="' + f.k + '"><label for="' + id + '">' + lab + '</label>' + input + why + '</div>';
+  }
+
+  function secCount(s, d){ var keys = s.fields.filter(function(f){ return f.key; }); var n = keys.filter(function(f){ return filled(d[f.k], f); }).length; return { n: n, of: keys.length }; }
+  function formHtml(){
+    var d = st.draft;
+    if (!d) return '<div class="backrow"><a class="btn ghost" href="#">‹ Ziyaretler</a></div><div class="empty"><h2>' + (st.loaded ? "Bu ziyaret bulunamadı" : "Ziyaret yükleniyor…") + '</h2><p>' + (st.loaded ? "Silinmiş olabilir. Listeye dönüp başka bir ziyaret seç." : "Birkaç saniye sürebilir.") + '</p></div>';
+    var p = progress(d);
+    var jump = '<nav class="jump" aria-label="Bölümler">' + SECTIONS.map(function(s){
+      var c = secCount(s, d), done = c.of && c.n === c.of;
+      return '<a href="#' + "s-" + s.id + '" data-jump="' + s.id + '" class="' + (done ? "done" : "") + '" id="j-' + s.id + '">' + esc(s.title) + (c.of ? ' <span class="c">' + c.n + '/' + c.of + '</span>' : '') + '</a>';
+    }).join("") + '</nav>';
+    var head = '<div class="formhead"><div class="backrow"><a class="btn ghost" href="#">‹ Ziyaretler</a><span class="save ' + (/Kaydedildi/.test(st.saveState) ? "ok" : /edilemedi|izin|dolu/.test(st.saveState) ? "err" : "") + '" id="saveState" role="status">' + esc(st.saveState || "Yazdıkça kaydedilir") + '</span></div>' +
+      (d.sample ? '<p class="banner">Bu bir örnek kayıt; nasıl dolduracağını görmen için. İşin bitince en alttan silebilirsin.</p>' : '') +
+      '<label class="sr" for="f-name" style="position:absolute;left:-9999px">Restoran adı</label><input class="titlein" id="f-name" data-k="name" placeholder="Restoran adı" value="' + esc(d.name || "") + '" autocomplete="off"' + (st.readOnly ? " disabled" : "") + '>' +
+      '<div class="prog" id="progLine"><span class="bar"><i class="' + (p.n === p.of ? "full" : "") + '" style="width:' + Math.round(p.n / p.of * 100) + '%"></i></span><span>' + p.n + '/' + p.of + ' temel bilgi · <span style="color:var(--mars)">●</span> işaretliler önemli</span></div>' + jump + '</div>';
+    var secs = SECTIONS.map(function(s){
+      var c = secCount(s, d);
+      var inner = s.photos ? photosHtml(d) : '<div class="fgrid">' + s.fields.map(function(f){ return fieldHtml(f, d); }).join("") + '</div>';
+      return '<section class="sec" id="s-' + s.id + '"><div class="sec-h"><h2>' + esc(s.title) + '</h2>' + (c.of ? '<span id="c-' + s.id + '">' + c.n + '/' + c.of + ' önemli</span>' : '') + '</div>' + inner + '</section>';
+    }).join("");
+    var dz = st.readOnly ? '' : '<div class="dz"><p>Bu ziyareti tamamen sil. Fotoğrafları da silinir.</p>' + (st.confirmDel
+      ? '<span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn danger" type="button" data-act="delYes">Evet, sil</button><button class="btn" type="button" data-act="delNo">Vazgeç</button></span>'
+      : '<button class="btn danger" type="button" data-act="delAsk">Ziyareti sil</button>') + '</div>';
+    return head + secs + dz;
+  }
+  function photosHtml(d){
+    var ph = Array.isArray(d.photos) ? d.photos : [];
+    var tiles = ph.map(function(x){
+      return '<div class="ph"><img src="' + esc(phSrc(x.id)) + '" alt="Ziyaret fotoğrafı" loading="lazy" onerror="this.style.opacity=.2">' + (st.readOnly ? '' :
+        (st.confirmPh === x.id ? '<button class="confirm" type="button" data-act="phYes" data-v="' + esc(x.id) + '">Sil?</button>' : '<button type="button" data-act="phAsk" data-v="' + esc(x.id) + '">Kaldır</button>')) + '</div>';
+    }).join("");
+    var add = st.assets && !st.readOnly
+      ? '<label class="addph" for="phIn"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>' +
+        (st.uploading ? "Yükleniyor… (" + st.uploading + ")" : "Fotoğraf çek ya da seç") + '<input id="phIn" type="file" accept="image/*" multiple></label>'
+      : '';
+    return '<p class="note">Menü, masa düzeni, mutfak ve ekranın konacağı yer. Telefonda dokununca kamera açılır.</p>' +
+      (tiles || add ? '<div class="photos">' + tiles + add + '</div>' : '<p class="note">Fotoğraf eklemek için bu sayfayı düzenleme yetkisiyle aç.</p>');
+  }
+  function afterForm(){ /* odak ve küçük güncellemeler için yer */ }
+
+  function refreshProgress(){
+    var d = st.draft; if (!d) return; var p = progress(d), pl = $("progLine");
+    if (pl) pl.innerHTML = '<span class="bar"><i class="' + (p.n === p.of ? "full" : "") + '" style="width:' + Math.round(p.n / p.of * 100) + '%"></i></span><span>' + p.n + '/' + p.of + ' temel bilgi · <span style="color:var(--mars)">●</span> işaretliler önemli</span>';
+    SECTIONS.forEach(function(s){
+      var c = secCount(s, d), j = $("j-" + s.id), h = $("c-" + s.id);
+      if (j) { j.classList.toggle("done", !!c.of && c.n === c.of); var sp = j.querySelector(".c"); if (sp) sp.textContent = c.n + "/" + c.of; }
+      if (h) h.textContent = c.n + "/" + c.of + " önemli";
+    });
+    ALLF.forEach(function(f){ var w = document.querySelector('[data-wrap="' + f.k + '"]'); if (w) w.classList.toggle("filled", filled(d[f.k], f)); });
+  }
+
+  /* ---------- etkileşim ---------- */
+  var view = $("view");
+  view.addEventListener("input", function(e){
+    var t = e.target;
+    if (t.id === "q") { st.q = t.value; var pos = t.selectionStart; render(); var q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch(x){} } return; }
+    var k = t.getAttribute("data-k"); if (!k || !st.draft || st.readOnly) return;
+    var f = ALLF.filter(function(x){ return x.k === k; })[0];
+    var v = t.value; if (f && f.t === "number") v = v === "" ? "" : String(Math.max(0, Math.round(Number(v)) || 0));
+    st.draft[k] = v; schedule(); refreshProgress();
+  });
+  view.addEventListener("change", function(e){
+    if (e.target.id === "restoreIn" && e.target.files && e.target.files[0] && window.SAHA_LOCAL) { var rf = e.target.files[0]; e.target.value = ""; window.SAHA_LOCAL.restore(rf).then(function(n){ toast(n + " ziyaret yüklendi"); }).catch(function(){ toast("Bu dosya bir Saha Defteri yedeği değil"); }); return; }
+    if (e.target.id === "phIn" && e.target.files && e.target.files.length) { var files = Array.prototype.slice.call(e.target.files); e.target.value = ""; files.forEach(uploadPhoto); }
+  });
+  view.addEventListener("click", function(e){
+    var b = e.target.closest("[data-act],[data-jump]"); if (!b) return;
+    if (b.hasAttribute("data-jump")) { e.preventDefault(); var s = $("s-" + b.getAttribute("data-jump")); if (s) s.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); return; }
+    var a = b.getAttribute("data-act"), v = b.getAttribute("data-v");
+    if (a === "new") { createVisit(); return; }
+    if (a === "backup" && window.SAHA_LOCAL) { window.SAHA_LOCAL.backup().then(function(){ toast("Yedek indirildi"); }).catch(function(){ toast("Yedek alınamadı"); }); return; }
+    if (a === "filter") { st.filter = v; render(); return; }
+    if (a === "pick" && st.draft && !st.readOnly) {
+      var k = b.getAttribute("data-k"), f = ALLF.filter(function(x){ return x.k === k; })[0];
+      if (f.t === "multi") { var arr = Array.isArray(st.draft[k]) ? st.draft[k].slice() : [], i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); st.draft[k] = arr; }
+      else st.draft[k] = String(st.draft[k]) === v ? "" : (f.t === "scale" ? Number(v) : v);
+      b.parentNode.querySelectorAll(".opt").forEach(function(x){
+        var xv = x.getAttribute("data-v");
+        x.setAttribute("aria-pressed", String(f.t === "multi" ? st.draft[k].indexOf(xv) >= 0 : String(st.draft[k]) === xv));
+      });
+      schedule(); refreshProgress(); return;
+    }
+    if (a === "delAsk") { st.confirmDel = true; render(); return; }
+    if (a === "delNo") { st.confirmDel = false; render(); return; }
+    if (a === "delYes") { deleteVisit(); return; }
+    if (a === "phAsk") { st.confirmPh = v; render(); return; }
+    if (a === "phYes") { removePhoto(v); return; }
+  });
+  $("newBtn").addEventListener("click", createVisit);
+
+  function createVisit(){
+    if (!st.db || st.readOnly) return;
+    var id = newId(), body = { id: id, name: "", status: "kesif", date: today(), problems: [], photos: [], createdAt: Date.now(), updatedAt: Date.now() };
+    st.visits[id] = body;
+    st.db.collection("visits").doc(id).set(body).catch(function(e){
+      if (e && e.code === "invalid_argument") { st.readOnly = true; toast("Bu defterde yeni kayıt açma iznin yok"); }
+      else toast("Yeni ziyaret kaydedilemedi, tekrar dene");
+      delete st.visits[id]; location.hash = ""; render();
+    });
+    location.hash = "ziyaret-" + id;
+    setTimeout(function(){ var n = $("f-name"); if (n) n.focus(); }, 50);
+  }
+  function deleteVisit(){
+    var id = st.cur, d = st.draft; if (!id) return;
+    clearTimeout(saveTimer); st.dirty = false;
+    var ph = (d && Array.isArray(d.photos)) ? d.photos.map(function(x){ return x.id; }) : [];
+    st.db.collection("visits").doc(id).delete().then(function(){
+      delete st.visits[id];
+      if (st.assets) ph.forEach(function(pid){ st.assets.delete(pid).catch(function(){}); });
+      toast("Ziyaret silindi"); location.hash = "";
+    }).catch(function(){ toast("Silinemedi, tekrar dene"); });
+  }
+  function removePhoto(pid){
+    if (!st.draft) return;
+    st.draft.photos = (st.draft.photos || []).filter(function(x){ return x.id !== pid; }); st.confirmPh = null;
+    schedule(); render();
+    if (st.assets) st.assets.delete(pid).catch(function(){});
+  }
+  function shrink(file){
+    return new Promise(function(res){
+      if (!window.createImageBitmap) return res(file);
+      createImageBitmap(file).then(function(img){
+        var max = 1600, s = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function(b){ res(b || file); }, "image/jpeg", 0.82);
+      }).catch(function(){ res(file); });
+    });
+  }
+  function uploadPhoto(file){
+    if (!st.assets || !st.draft) return;
+    var forId = st.cur; st.uploading++; render();
+    shrink(file).then(function(blob){
+      var type = blob.type === "image/jpeg" || blob.type === "image/png" || blob.type === "image/webp" ? blob.type : "image/jpeg";
+      return st.assets.upload(blob, { type: type });
+    }).then(function(r){
+      st.uploading--;
+      if (st.cur === forId && st.draft) { st.draft.photos = (st.draft.photos || []).concat([{ id: r.id, at: Date.now() }]); schedule(); }
+      else { var v = st.visits[forId]; if (v) st.db.collection("visits").doc(forId).update({ photos: (v.photos || []).concat([{ id: r.id, at: Date.now() }]) }).catch(function(){}); }
+      render(); toast("Fotoğraf eklendi");
+    }).catch(function(e){
+      st.uploading--; render();
+      var c = e && e.code;
+      toast(c === "unsupported_type" ? "Bu fotoğraf biçimi desteklenmiyor; JPEG ya da PNG dene" : c === "too_large" ? "Fotoğraf çok büyük" : c === "quota_or_state" ? "Fotoğraf alanı doldu" : "Fotoğraf yüklenemedi, tekrar dene");
+    });
+  }
+
+  /* ---------- bağlantı ---------- */
+  render();
+  var slowT = setTimeout(function(){ if (!st.loaded) { st.slow = true; render(); } }, 10000);
+  var cl = window.claude;
+  if (!cl || !cl.use) { st.loaded = true; clearTimeout(slowT); render(); return; }
+  cl.use("assets").then(function(a){ st.assets = a; if (st.cur) render(); }).catch(function(){});
+  cl.use("db").then(function(db){
+    st.db = db;
+    if (!db) { st.loaded = true; clearTimeout(slowT); render(); return; }
+    render();
+    db.collection("visits").onSnapshot(function(snap){
+      var m = {}; snap.docs.forEach(function(d){ var x = d.data(); if (x) { var c = JSON.parse(JSON.stringify(x)); c.id = c.id || d.id; m[d.id] = c; } });
+      // açık ve henüz kaydedilmemiş yeni ziyaret listeden düşmesin
+      if (st.cur && !m[st.cur] && st.visits[st.cur] && !st.loaded) m[st.cur] = st.visits[st.cur];
+      st.visits = m;
+      if (!snap.metadata.fromCache) { st.loaded = true; st.slow = false; clearTimeout(slowT); }
+      if (st.cur) {
+        if (!st.draft && m[st.cur]) { st.draft = JSON.parse(JSON.stringify(m[st.cur])); render(); }
+        else if (!st.draft && st.loaded) render();
+        return;   // açık formun üstüne yazma: düzenleme sürüyor
+      }
+      var a = document.activeElement; if (a && a.id === "q") return render(), (function(){ var q = $("q"); if (q) { q.focus(); var l = q.value.length; try { q.setSelectionRange(l, l); } catch(x){} } })();
+      render();
+    }, function(e){ st.loaded = true; clearTimeout(slowT); st.err = e && e.code; render(); });
+  });
+  if (location.hash) route();
+})();
+</script>
+
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});</script>
+</body>
+</html>
