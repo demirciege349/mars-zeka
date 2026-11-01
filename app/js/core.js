@@ -104,8 +104,13 @@
     if (/weak-password/.test(c)) return "Şifre en az 6 karakter olmalı.";
     if (/too-many-requests/.test(c)) return "Çok fazla deneme yapıldı, biraz bekle.";
     if (/operation-not-allowed|admin-restricted/.test(c)) return "Giriş yöntemi Firebase'de açılmamış (README, Adım 3).";
+    if (/configuration-not-found/.test(c)) return "Firebase'de Authentication açılmamış ya da E-posta/Şifre girişi etkin değil.";
+    if (/unauthorized-domain/.test(c)) return "Bu site Firebase'de izinli değil: Authentication → Settings → Authorized domains'e demirciege349.github.io ekle.";
+    if (/api-key|invalid-api-key/.test(c)) return "Firebase ayar kodu (apiKey) hatalı.";
+    if (/network-request-failed/.test(c)) return "Firebase'e ulaşılamadı. İnterneti kontrol et.";
+    if (/failed-precondition|not-found/.test(c)) return "Firestore veritabanı oluşturulmamış ya da kurallar yayınlanmamış.";
     if (/quota/.test(c)) return "Depolama doldu. Kurulumdan eski siparişleri temizle.";
-    return "İşlem yapılamadı, tekrar dene.";
+    return "İşlem yapılamadı, tekrar dene." + (c ? " (kod: " + String(c).slice(0, 60) + ")" : "");
   };
 
   /* ses (ilk dokunuşta açılır) */
