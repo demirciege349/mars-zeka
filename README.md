@@ -4,7 +4,7 @@ Mars Zeka, restoran ve kafeler için masadan sipariş sistemidir. Misafir masada
 
 Misafir uygulama indirmez, hesap açmaz; her telefonun tarayıcısında çalışır.
 
-**Canlı demo:** https://demirciege349.github.io/self-service-s-ra-rahatlatma-/
+**Canlı demo:** https://demirciege349.github.io/mars-zeka/
 Telefonla açın, sipariş verin, üstteki **Mutfak / kasa** düğmesiyle siparişin düştüğünü görün. (Demo tek cihazda çalışır; veriler o telefonda kalır.)
 
 ---
