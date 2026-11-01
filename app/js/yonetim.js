@@ -36,7 +36,7 @@
         !f.owner.trim() ? "Patronun adını yazın." : !S.USER_RE.test(user) ? "Kullanıcı adı 3–20 karakter; harf, rakam, nokta, tire." : f.pass.length < 6 ? "Şifre en az 6 karakter olmalı." : null;
       if (st.err) { render(); return; }
       st.busy = true; render();
-      B.createBusiness(code, { name: f.name.trim(), tables: Number(f.tables), menu: [], onlineOpen: true, delivery: true, zones: {}, createdAt: Date.now() },
+      B.createBusiness(code, { name: f.name.trim(), tables: Number(f.tables), menu: [], onlineOpen: false, delivery: false, zones: {}, createdAt: Date.now() },
         { email: S.userEmail(code, user), password: f.pass, name: f.owner.trim() })
         .then(function(){ st.made = { name: f.name.trim(), code: code, user: user, pass: f.pass }; st.form = { name: "", code: "", tables: "12", owner: "", user: "", pass: "" }; refresh(); })
         .catch(function(e){ st.err = S.errText(e); })
@@ -61,9 +61,9 @@
         '<h3 class="g-cat">İşletmeler</h3>' + (st.cafes === null ? '<p class="muted">Yükleniyor…</p>' : cafes.length ? cafes.map(function(c){
           var x = st.stats[c.id], lk = L(c.id), staffN = Object.keys(c.staff || {}).length;
           return '<article class="y-cafe"><div class="g-r-top"><b>' + S.esc(c.name) + '</b><small>kod: ' + S.esc(c.id) + '</small></div>' +
-            '<div class="y-nums"><span><b>' + (x ? S.fmt(x.sum) : "…") + '</b> bugün</span><span><b>' + (x ? x.n : "…") + '</b> sipariş' + (x && x.online ? ' · ' + x.online + ' online' : '') + '</span><span><b>' + (c.tables || 0) + '</b> masa · ' + staffN + ' çalışan</span>' +
-            '<span class="g-chip ' + (c.onlineOpen === false ? "late" : "ok") + '">Online ' + (c.onlineOpen === false ? "kapalı" : "açık") + '</span>' + ((c.menu || []).length ? '' : '<span class="g-chip late">Menü boş</span>') + '</div>' +
-            '<div class="row-btns">' + link("Çalışan uygulaması", lk.garson) + link("Menü / QR", lk.kurulum) + link("Misafir menüsü", lk.menu) + link("Online sipariş", lk.online) + '</div></article>';
+            '<div class="y-nums"><span><b>' + (x ? S.fmt(x.sum) : "…") + '</b> bugün</span><span><b>' + (x ? x.n : "…") + '</b> sipariş' + '' + '</span><span><b>' + (c.tables || 0) + '</b> masa · ' + staffN + ' çalışan</span>' +
+            ((c.menu || []).length ? '' : '<span class="g-chip late">Menü boş</span>') + '</div>' +
+            '<div class="row-btns">' + link("Çalışan uygulaması", lk.garson) + link("Menü / QR", lk.kurulum) + link("Misafir menüsü", lk.menu) + '</div></article>';
         }).join("") : '<p class="muted">Henüz işletme yok.</p>') +
         '<h3 class="g-cat">Yeni işletme aç</h3><form class="g-new" id="newCafe" novalidate>' +
         '<label for="y-name">İşletme adı<input id="y-name" maxlength="40" value="' + S.esc(f.name) + '" placeholder="ör. Köşe Kahve"></label>' +

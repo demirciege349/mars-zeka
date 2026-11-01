@@ -1,4 +1,4 @@
-/* Mars Zeka — çalışan uygulaması (telefon): gelen siparişler (QR + online), masalar ve çağrılar, mutfaktan hazır,
+/* Mars Zeka — çalışan uygulaması (telefon): gelen siparişler (QR + garson), masalar ve çağrılar, mutfaktan hazır,
    sipariş alma, masa hesabı. Patron rolündeki kullanıcı aynı uygulamada ek olarak "Patron" sekmesini görür. */
 (function(){
   "use strict";
@@ -172,7 +172,7 @@
       return '<div class="g-h-row"><h2 class="g-h">Siparişler</h2>' + (myTables().length ? '<button class="g-filter" aria-pressed="' + st.mineOnly + '" data-act="mine">Sadece benim masalarım</button>' : '') + '</div>' +
         seatSection() + (list.length ? (onl.length ? '<h3 class="g-cat">Online · ' + onl.length + '</h3>' + onl.map(orderCard).join("") : '') +
           (tbl.length ? '<h3 class="g-cat">Masalar · ' + tbl.length + '</h3>' + tbl.map(orderCard).join("") : '')
-          : waitingSeats().length ? '' : '<div class="g-empty">' + IC.inbox + '<p>Açık sipariş yok. QR\'dan ya da online sipariş gelince burada belirir, telefon titrer.</p></div>');
+          : waitingSeats().length ? '' : '<div class="g-empty">' + IC.inbox + '<p>Açık sipariş yok. QR\'dan sipariş gelince burada belirir, telefon titrer.</p></div>');
     }
     function tablesTab(){
       var cs = calls();
@@ -281,7 +281,7 @@
       var openT = {}; st.orders.forEach(function(o){ if (o.source !== "online" && o.status !== "cancelled") openT[o.table] = 1; });
       var tiles = '<div class="g-tiles">' +
         '<div class="g-tile big"><span>Toplam gelir</span><b>' + S.fmt(total) + '</b><small>' + R.length + ' sipariş · iptaller hariç</small></div>' +
-        '<div class="g-tile"><span>Online</span><b>' + S.fmt(sum(onl)) + '</b><small>' + onl.length + ' sipariş</small></div>' +
+        '<div class="g-tile"><span>Garson</span><b>' + S.fmt(sum(R.filter(function(o){ return o.source === "garson"; }))) + '</b><small>' + R.filter(function(o){ return o.source === "garson"; }).length + ' sipariş</small></div>' +
         '<div class="g-tile"><span>QR</span><b>' + S.fmt(sum(qr)) + '</b><small>' + qr.length + ' sipariş</small></div>' +
         '<div class="g-tile"><span>Şu an açık masa</span><b>' + Object.keys(openT).length + '</b><small>mutfakta ' + st.orders.filter(function(o){ return o.status === "new"; }).length + ' sipariş</small></div></div>';
       var rows = emails.map(function(e){
@@ -313,8 +313,6 @@
         '<p class="g-info">Çalışan girişte işletme kodu <b>' + S.esc(cafeId) + '</b>, kendi kullanıcı adı ve şifresini yazar. Kaldırılan çalışanın erişimi hemen kapanır.</p></form></div>';
       var L = S.loadInfo(st.orders, cafe);
       var settings = '<h3 class="g-cat">Ayarlar</h3><div class="g-set">' +
-        '<label class="g-sw"><span><b>Online sipariş</b><small>Kapalıyken müşteri "şu an sipariş almıyoruz" görür.</small></span><input type="checkbox" data-act="setOnline"' + (cafe.onlineOpen === false ? "" : " checked") + '></label>' +
-        '<label class="g-sw"><span><b>Paket servis</b><small>Kapalıyken online sipariş sadece gel-al olur.</small></span><input type="checkbox" data-act="setDelivery"' + (cafe.delivery === false ? "" : " checked") + '></label>' +
         '<div class="g-sw"><span><b>Mutfak ek süresi</b><small>' + L.queue + ' bekleyen · otomatik +' + L.auto + ' dk</small></span><div class="g-pick sm">' + [0, 10, 20].map(function(x){ return '<button aria-pressed="' + (L.manual === x) + '" data-act="busy" data-v="' + x + '">' + (x ? "+" + x : "Yok") + '</button>'; }).join("") + '</div></div></div>';
       return head + tiles + team + people + settings;
     }

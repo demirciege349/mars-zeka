@@ -15,15 +15,14 @@
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
   }
   var m = parseInt(q.get("m"), 10);
-  // QR'sız açılış (ana ekran / uygulama simgesi) = çalışan girişi; misafir sadece masa QR'ı ya da online linkiyle menüye gelir.
-  if (page === "musteri" && !(m > 0) && !q.get("online")) page = "garson";
+  // QR'sız açılış (ana ekran / uygulama simgesi) = çalışan girişi; misafir sadece masa QR'ı ile menüye gelir.
+  if (page === "musteri" && !(m > 0)) page = "garson";
   if (page === "musteri") {
-    if (q.get("online")) SiralaApp.musteri({ B: B, cafeId: k, online: true });
-    else SiralaApp.musteri({ B: B, cafeId: k, table: m > 0 ? String(m) : "" });
+    SiralaApp.musteri({ B: B, cafeId: k, table: m > 0 ? String(m) : "" });
   } else if (page === "garson") {
     SiralaApp.garson({ B: B, cafeId: k, followLogin: true, kitchenHref: function(c){ return "kasa.html?k=" + encodeURIComponent(c); } });
   } else if (page === "yonetim") {
-    SiralaApp.yonetim({ B: B, links: function(code){ var c = encodeURIComponent(code); return { garson: "garson.html?k=" + c, kurulum: "kurulum.html?k=" + c, menu: "./?k=" + c + "&m=1", online: "./?k=" + c + "&online=1" }; } });
+    SiralaApp.yonetim({ B: B, links: function(code){ var c = encodeURIComponent(code); return { garson: "garson.html?k=" + c, kurulum: "kurulum.html?k=" + c, menu: "./?k=" + c + "&m=1" }; } });
   } else if (page === "kasa") {
     SiralaApp.kasa({ B: B, cafeId: k, setupHref: "kurulum.html" + (k ? "?k=" + encodeURIComponent(k) : "") });
   } else {
