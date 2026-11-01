@@ -1,7 +1,7 @@
 // Firebase konsolundaki "Web uygulamasi" ayarlarindan kopyalanan bilgiler.
 // Rehber: README.md, Adim 2.
 export const firebaseConfig = {
-  apiKey: "AIzaSyBJHOL_Bwjfy5-wMKe1g8TuawLVrfXuCfE",
+  apiKey: "AIzaSyBJHOL_BwJfy5-wMKe1g8TuawLVrfXuCfE",
   authDomain: "mars-zeka.firebaseapp.com",
   projectId: "mars-zeka",
   storageBucket: "mars-zeka.firebasestorage.app",
