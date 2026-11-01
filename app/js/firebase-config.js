@@ -1,10 +1,10 @@
-// Firebase konsolundaki "Web uygulaması" ayarlarından kopyaladığın bilgileri buraya yapıştır.
-// Rehber: README.md, Adım 2.
+// Firebase konsolundaki "Web uygulamasi" ayarlarindan kopyalanan bilgiler.
+// Rehber: README.md, Adim 2.
 export const firebaseConfig = {
-  apiKey: "BURAYA_API_KEY",
-  authDomain: "PROJE_ID.firebaseapp.com",
-  projectId: "PROJE_ID",
-  storageBucket: "PROJE_ID.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "BURAYA_APP_ID"
+  apiKey: "AIzaSyBJHOL_Bwjfy5-wMKe1g8TuawLVrfXuCfE",
+  authDomain: "mars-zeka.firebaseapp.com",
+  projectId: "mars-zeka",
+  storageBucket: "mars-zeka.firebasestorage.app",
+  messagingSenderId: "253740198569",
+  appId: "1:253740198569:web:fb9e02f47d855337c017b8"
 };
