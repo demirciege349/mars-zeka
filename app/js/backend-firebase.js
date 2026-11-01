@@ -110,7 +110,7 @@
       return F.updateDoc(cafe(id), new F.FieldPath("staff", e), F.deleteField(), new F.FieldPath("zones", e), F.deleteField(), "staffEmails", F.arrayRemove(e));
     },
     /* Yönetim (Ege): tüm işletmeler. admins/{e-posta} belgesi olan hesap yöneticidir (Firebase konsolundan eklenir). */
-    isAdmin: function(email){ return F.getDoc(F.doc(db, "admins", String(email).toLowerCase())).then(function(s){ return s.exists(); }).catch(function(){ return false; }); },
+    isAdmin: function(email){ return F.getDoc(F.doc(db, "admins", String(email).toLowerCase())).then(function(s){ return s.exists(); }); },
     listAllCafes: function(){ return F.getDocs(F.collection(db, "cafes")).then(function(q){ return list(q); }); },
     createBusiness: function(id, data, owner){
       var self = this, e = String(owner.email).toLowerCase();

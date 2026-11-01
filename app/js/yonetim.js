@@ -13,7 +13,7 @@
       if (!alive) return;
       st.user = u && u.staff ? u : null; st.authKnown = true; st.admin = null; st.cafes = null;
       if (!st.user) { render(); return; }
-      B.isAdmin(st.user.email).then(function(ok){ st.admin = ok; render(); if (ok) refresh(); });
+      B.isAdmin(st.user.email).then(function(ok){ st.admin = ok; render(); if (ok) refresh(); }).catch(function(e){ st.admin = false; st.adminErr = S.errText(e); render(); });
     });
 
     function refresh(){
@@ -50,7 +50,7 @@
       if (!st.authKnown) { app.innerHTML = '<p class="muted center" style="padding:40px">Yükleniyor…</p>'; return; }
       if (!st.user) { app.innerHTML = S.loginView("Yönetim girişi", st.loginErr, "", ctx.loginHint || "", true); S.bindLogin(B, function(m){ st.loginErr = m; render(); }); return; }
       if (st.admin === null) { app.innerHTML = '<p class="muted center" style="padding:40px">Kontrol ediliyor…</p>'; return; }
-      if (!st.admin) { app.innerHTML = '<main class="login"><div class="login-card"><h1>Yönetici değil</h1><p class="muted">' + S.esc(S.userName(st.user.email)) + ' hesabı yönetim ekranını açamaz.</p><button class="btn wide" data-act="logout">Başka hesapla giriş yap</button></div></main>'; return; }
+      if (!st.admin) { app.innerHTML = '<main class="login"><div class="login-card"><h1>Yönetici değil</h1><p class="muted">' + S.esc(S.userName(st.user.email)) + ' hesabı yönetim ekranını açamaz.</p>' + (st.adminErr ? '<p class="form-err" role="alert">' + S.esc(st.adminErr) + '</p>' : '') + '<button class="btn wide" data-act="logout">Başka hesapla giriş yap</button></div></main>'; return; }
       var cafes = st.cafes || [], tot = { n: 0, sum: 0 };
       cafes.forEach(function(c){ var x = st.stats[c.id]; if (x) { tot.n += x.n; tot.sum += x.sum; } });
       var f = st.form;
