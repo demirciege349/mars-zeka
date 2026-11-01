@@ -16,7 +16,10 @@
     var menu = function(){ return (st.cafe && Array.isArray(st.cafe.menu)) ? st.cafe.menu : []; };
     var cartItems = function(){ return S.cartLines(st.cart, menu()); };
     var tableLabel = online ? "Online sipariş" : "Masa " + table;
-    var load = function(){ return S.loadInfo(st.all, st.cafe); };
+    // Mutfak yoğunluğu: tüm siparişleri dinlemek yerine bekleyen sipariş sayısı ara ara sayılır (Firebase kotası için).
+    var queueN = 0, queueAt = 0;
+    function refreshQueue(){ if (!B.queueCount || Date.now() - queueAt < 120000) return; queueAt = Date.now(); B.queueCount(cafeId).then(function(n){ if (n !== queueN) { queueN = n; render(); } }).catch(function(){}); }
+    var load = function(){ var q = []; for (var i = 0; i < queueN; i++) q.push({ status: "new" }); return S.loadInfo(online ? st.all : q, st.cafe); };
     var alive = true, unsubs = [];
 
     if (!table) { S.$("app").innerHTML = '<main class="c-wrap c-main"><div class="empty-card"><h2>Masadaki QR kodu okutun</h2><p>Sipariş vermek için oturduğunuz masadaki QR kodu telefonunuzun kamerasıyla okutun.</p></div></main>'; return; }
@@ -25,8 +28,9 @@
       if (!alive) return;
       unsubs.push(B.watchCafe(cafeId, function(d){ st.cafe = d; st.cafeLoaded = true; dropSoldOut(); document.title = ((d && d.name) || "Menü") + " · " + tableLabel; render(); }, fail));
       unsubs.push(B.watchPhotos(cafeId, function(m){ st.photos = m; render(); }));
-      unsubs.push(B.watchOrders(cafeId, null, function(list){ st.all = list; st.orders = list.filter(function(o){ return online ? mine(o) : String(o.table) === String(table) && o.source !== "online"; }); st.ordLoaded = true; render(); }, fail));
-      if (!online) unsubs.push(B.watchTables(cafeId, function(m){ st.tbl = m[String(table)] || {}; markSeated(); render(); }));
+      unsubs.push(B.watchOrders(cafeId, online ? null : { table: String(table) }, function(list){ st.all = list; st.orders = list.filter(function(o){ return online ? mine(o) : String(o.table) === String(table) && o.source !== "online"; }); st.ordLoaded = true; render(); }, fail));
+      if (!online) unsubs.push(B.watchTable ? B.watchTable(cafeId, String(table), function(t){ st.tbl = t || {}; markSeated(); render(); }) : B.watchTables(cafeId, function(m){ st.tbl = m[String(table)] || {}; markSeated(); render(); }));
+      refreshQueue();
     }).catch(fail);
     function dropSoldOut(){
       var gone = [];
@@ -269,7 +273,7 @@
       }
       render();
     };
-    var tick = setInterval(function(){ if (st.view === "menu") render(); }, 30000);
+    var tick = setInterval(function(){ refreshQueue(); if (st.view === "menu") render(); }, 30000);
     return function(){ alive = false; clearInterval(tick); unsubs.forEach(function(u){ try { u(); } catch(e){} }); };
   };
 })();

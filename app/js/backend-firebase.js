@@ -78,6 +78,13 @@
       });
     },
 
+    // Müşteri: yalnızca kendi masasının kaydını dinler (her masa değişikliği herkese okutulmaz).
+    watchTable: function(id, table, cb){ return F.onSnapshot(F.doc(db, "cafes", id, "tables", String(table)), function(s){ cb(s.exists() ? s.data() : {}); }, function(){}); },
+    // Mutfakta bekleyen sipariş sayısı: sayım sorgusu (siparişleri tek tek indirmez).
+    queueCount: function(id){
+      var q = F.query(sub(id, "orders"), F.where("status", "==", "new"), F.where("closed", "==", false));
+      return (F.getCountFromServer ? F.getCountFromServer(q).then(function(r){ return r.data().count; }) : F.getDocs(q).then(function(r){ return r.size; }));
+    },
     watchTables: function(id, cb){ return F.onSnapshot(sub(id, "tables"), function(s){ var m = {}; s.docs.forEach(function(d){ m[d.id] = d.data(); }); cb(m); }, function(){}); },
     setTable: function(id, table, patch){ return F.setDoc(F.doc(db, "cafes", id, "tables", table), patch, { merge: true }); },
 
