@@ -826,7 +826,7 @@ window.SIRALA_SEED = null;
     if (/unauthorized-domain/.test(c)) return "Bu site Firebase'de izinli değil: Authentication → Settings → Authorized domains'e demirciege349.github.io ekle.";
     if (/api-key|invalid-api-key/.test(c)) return "Firebase ayar kodu (apiKey) hatalı.";
     if (/network-request-failed/.test(c)) return "Firebase'e ulaşılamadı. İnterneti kontrol et.";
-    if (/failed-precondition|not-found/.test(c)) return "Firestore veritabanı oluşturulmamış ya da kurallar yayınlanmamış.";
+    if (/failed-precondition|not-found/.test(c)) return "Kaydedilemedi, sayfayı yenileyip tekrar dene. (kod: " + String(c).slice(0, 60) + ")";
     if (/quota/.test(c)) return "Depolama doldu. Kurulumdan eski siparişleri temizle.";
     return "İşlem yapılamadı, tekrar dene." + (c ? " (kod: " + String(c).slice(0, 60) + ")" : "");
   };
@@ -1268,7 +1268,9 @@ S.loginView = function(title, error, prefill, hint, noCode){
     var app = m[0].initializeApp(cfg); CFG = cfg; APP = m[0];
     A = m[1]; F = m[2];
     auth = A.getAuth(app);
-    db = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });
+    var idbOk = true; try { idbOk = !!window.indexedDB; } catch(x){ idbOk = false; }
+    try { db = F.initializeFirestore(app, idbOk ? { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) } : {}); }
+    catch(x){ db = F.getFirestore(app); }
     A.onAuthStateChanged(auth, function(u){ user = wrapUser(u); resolved = true; authCbs.forEach(function(cb){ cb(user); }); });
   });
   var resolved = false;
@@ -1362,8 +1364,16 @@ S.loginView = function(title, error, prefill, hint, noCode){
     },
     createStaff: function(id, p){
       var e = String(p.email).toLowerCase(), self = this;
-      return self.makeAccount(e, p.password).then(function(){
-        return F.updateDoc(cafe(id), new F.FieldPath("staff", e), { name: p.name, role: p.role }, "staffEmails", F.arrayUnion(e));
+      var write = function(){ return F.updateDoc(cafe(id), new F.FieldPath("staff", e), { name: p.name, role: p.role }, "staffEmails", F.arrayUnion(e)); };
+      return self.makeAccount(e, p.password).catch(function(err){
+        /* Hesap daha önce açılmış ama işletmeye eklenememişse: aynı şifre doğruysa kaldığı yerden devam et */
+        if (!/email-already-in-use/.test(String(err && (err.code || err.message)))) throw err;
+        return A.signInWithEmailAndPassword(auth2, e, p.password).then(function(){ return A.signOut(auth2); }, function(){ throw err; });
+      }).then(function(){
+        return write().catch(function(err){
+          if (!/failed-precondition|unavailable|aborted/.test(String(err && (err.code || err.message)))) throw err;
+          return new Promise(function(r){ setTimeout(r, 600); }).then(write);
+        });
       });
     },
     removeStaff: function(id, email){
