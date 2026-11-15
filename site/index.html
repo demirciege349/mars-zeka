@@ -759,6 +759,7 @@ window.SIRALA_SEED = null;
     var k = Number(i.kcal) || 0;
     var o = [{ key: i.id, label: "1 porsiyon", price: Number(i.price) || 0, kcal: k, amount: S.amountText(i, 1) }];
     if (Number(i.p15) > 0) o.push({ key: i.id + "@15", label: "1,5 porsiyon", price: Number(i.p15), kcal: Math.round(k * 1.5), amount: S.amountText(i, 1.5) });
+    if (Number(i.p2) > 0) o.push({ key: i.id + "@2", label: "Duble", price: Number(i.p2), kcal: Math.round(k * 2), amount: S.amountText(i, 2) });
     return o;
   };
   /* Porsiyon miktarı serbest metin ("180 gr et", "300 ml"). Baştaki gr/ml sayısı 1,5 porsiyonda ölçeklenir. */
@@ -766,7 +767,7 @@ window.SIRALA_SEED = null;
     var t = String(i.amount || "").trim(); if (!t) return "";
     if (!factor || factor === 1) return t;
     var m = t.match(/^(\d+(?:[.,]\d+)?)\s*(gr|g|ml|cl|kg)\b(.*)$/i);
-    if (!m) return t + " × 1,5";
+    if (!m) return t + " × " + String(factor).replace(".", ",");
     var n = Math.round(parseFloat(m[1].replace(",", ".")) * factor);
     return n + " " + m[2] + m[3];
   };
@@ -776,7 +777,7 @@ window.SIRALA_SEED = null;
       if (i.out) return;
       S.options(i).forEach(function(o, n){
         var q = cart[o.key] || 0;
-        if (q > 0) out.push({ id: i.id, name: i.name + (n ? " (1,5 porsiyon)" : ""), price: o.price, qty: q });
+        if (q > 0) out.push({ id: i.id, name: i.name + (n ? " (" + o.label + ")" : ""), price: o.price, qty: q });
       });
     });
     return out;
@@ -1004,6 +1005,7 @@ window.SIRALA_SEED = null;
         return '<section class="cat"><h2>' + S.esc(c) + '</h2>' + items.filter(function(i){ return (i.cat || "Diğer") === c; }).map(function(i){
           var out = row(i.name, i.amount || "", i.price);
           if (Number(i.p15) > 0) out += row(i.name + " · 1,5 porsiyon", S.amountText(i, 1.5), i.p15);
+          if (Number(i.p2) > 0) out += row(i.name + " · Duble", S.amountText(i, 2), i.p2);
           return out;
         }).join("") + '</section>';
       }).join("") + '</div><div class="foot">Fiyatlarımıza KDV dahildir.<br>Menümüzü masanızdaki QR kodu okutarak da görebilir, siparişinizi oradan verebilirsiniz.</div></div></body></html>';
@@ -1724,8 +1726,11 @@ S.loginView = function(title, error, prefill, hint, noCode){
       var changes = [];
       if (p > 0 && p !== Number(it.price)) changes.push(it.name + ": " + it.price + " → " + p + " ₺");
       if (m !== (Number(it.mins) || S.DEFAULT_MINS)) changes.push(it.name + " süresi: " + (Number(it.mins) || S.DEFAULT_MINS) + " → " + m + " dk");
+      var v15 = Math.max(0, Math.round(Number((S.$("p15-" + id) || {}).value) || 0)), v2 = Math.max(0, Math.round(Number((S.$("p2-" + id) || {}).value) || 0));
+      if (v15 !== (Number(it.p15) || 0)) changes.push(it.name + " 1,5 porsiyon: " + (Number(it.p15) || "yok") + " → " + (v15 || "yok") + (v15 ? " ₺" : ""));
+      if (v2 !== (Number(it.p2) || 0)) changes.push(it.name + " duble: " + (Number(it.p2) || "yok") + " → " + (v2 || "yok") + (v2 ? " ₺" : ""));
       if (!changes.length) { S.toast("Değişiklik yok"); return; }
-      if (p > 0) it.price = p; it.mins = m;
+      if (p > 0) it.price = p; it.mins = m; it.p15 = v15; it.p2 = v2;
       var d = new Date(), stamp = d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" }) + " " + S.clock(d);
       st.log = changes.map(function(c){ return stamp + "  " + c; }).concat(st.log).slice(0, 60);
       saveMenu(items, p > 0 && changes.some(function(c){ return c.indexOf("₺") > 0; }) ? "Kaydedildi · basılı fiyat listesini yeniden yazdırmayı unutmayın" : "Kaydedildi").then(function(){ return B.setPrivate(cafeId, { log: st.log }); }).then(function(){ render(true); });
@@ -1880,7 +1885,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
         '<section class="k-panel"><span class="label" style="margin-bottom:8px">Masa</span><div class="pick-table">' + tbs.join("") + '</div></section>' +
         '<section class="k-panel">' + (items.length ? items.map(function(i){
           return S.options(i).map(function(o, n){ var q = st.wCart[o.key] || 0;
-            return '<div class="w-item"><span class="nm"><b>' + S.esc(i.name) + (n ? ' · 1,5 porsiyon' : '') + '</b><span class="small muted">' + S.fmt(o.price) + ' · ort. ' + (Number(i.mins) || S.DEFAULT_MINS) + ' dk</span></span><div class="stepper">' +
+            return '<div class="w-item"><span class="nm"><b>' + S.esc(i.name) + (n ? ' · ' + o.label : '') + '</b><span class="small muted">' + S.fmt(o.price) + ' · ort. ' + (Number(i.mins) || S.DEFAULT_MINS) + ' dk</span></span><div class="stepper">' +
               (q ? '<button class="round" data-act="wdec" data-v="' + S.esc(o.key) + '" aria-label="azalt">−</button><span class="q">' + q + '</span>' : '') +
               '<button class="round' + (q ? "" : " round-add") + '" data-act="winc" data-v="' + S.esc(o.key) + '" aria-label="' + S.esc(i.name) + ' ekle">+</button></div></div>'; }).join(""); }).join("") : '<p class="muted">Menü boş.</p>') + '</section>' +
         '<label class="fld" for="wnote"><span>Not</span><input id="wnote" maxlength="120" value="' + S.esc(st.wNote) + '" placeholder="ör. acısız"></label>' +
@@ -1896,9 +1901,11 @@ S.loginView = function(title, error, prefill, hint, noCode){
           return '<div class="m-row' + (i.out ? " is-out" : "") + '"><div><div class="m-nm">' + S.esc(i.name) + '</div><span class="small muted">' + S.esc(i.cat || "") + '</span></div><div class="m-ctl">' +
             (st.pinOk
               ? '<label class="sr" for="pr-' + S.esc(i.id) + '">Fiyat</label><input class="price-in" id="pr-' + S.esc(i.id) + '" type="number" min="0" inputmode="numeric" value="' + (Number(i.price) || 0) + '"><span class="small muted">₺</span>' +
+                '<label class="sr" for="p15-' + S.esc(i.id) + '">1,5 porsiyon fiyatı</label><input class="price-in" style="width:80px" id="p15-' + S.esc(i.id) + '" type="number" min="0" inputmode="numeric" placeholder="1,5" title="1,5 porsiyon fiyatı (boş = yok)" value="' + (Number(i.p15) || "") + '">' +
+                '<label class="sr" for="p2-' + S.esc(i.id) + '">Duble fiyatı</label><input class="price-in" style="width:80px" id="p2-' + S.esc(i.id) + '" type="number" min="0" inputmode="numeric" placeholder="Duble" title="Duble fiyatı (boş = yok)" value="' + (Number(i.p2) || "") + '">' +
                 '<label class="sr" for="mn-' + S.esc(i.id) + '">Süre</label><input class="price-in" style="width:70px" id="mn-' + S.esc(i.id) + '" type="number" min="1" max="180" inputmode="numeric" value="' + (Number(i.mins) || S.DEFAULT_MINS) + '"><span class="small muted">dk</span>' +
                 '<button class="btn btn-sm" data-act="saveItem" data-v="' + S.esc(i.id) + '">Kaydet</button>'
-              : '<span class="num" style="font-size:1.15rem">' + S.fmt(i.price) + '</span><span class="small muted">ort. ' + (Number(i.mins) || S.DEFAULT_MINS) + ' dk</span>') +
+              : '<span class="num" style="font-size:1.15rem">' + S.fmt(i.price) + '</span>' + (Number(i.p15) > 0 ? '<span class="small muted">1,5: ' + S.fmt(i.p15) + '</span>' : '') + (Number(i.p2) > 0 ? '<span class="small muted">Duble: ' + S.fmt(i.p2) + '</span>' : '') + '<span class="small muted">ort. ' + (Number(i.mins) || S.DEFAULT_MINS) + ' dk</span>') +
             '<button class="btn btn-sm ' + (i.out ? "btn-ok" : "btn-bad") + '" data-act="out" data-v="' + S.esc(i.id) + '">' + (i.out ? "Geri aç" : "Tükendi") + '</button></div></div>';
         }).join("") : '<p class="muted">Menü boş. Kurulumdan ürün ekleyin.</p>') + '</section>' +
         (st.pinOk ? '<section class="k-panel"><span class="label">Değişiklik kaydı</span>' + (st.log.length ? '<ul class="log" style="margin-top:8px">' + st.log.map(function(l){ return '<li>' + S.esc(l) + '</li>'; }).join("") + '</ul>' : '<p class="muted small">Henüz değişiklik yok.</p>') + '</section>' : '') + '</div>';
@@ -2153,7 +2160,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
       var zone = o.source === "online" ? null : S.zoneOf(st.cafe, o.table);
       return '<article class="g-ord ' + (o.source === "online" ? "online " : "") + (done ? "done" : "") + '"><div class="g-r-top"><b>' + S.esc(S.orderLabel(o)) + '</b><small>' + S.clock(o.createdAt) + ' · ' + S.esc(who) + '</small></div>' +
         (zone ? '<span class="g-zone">Sorumlu: ' + S.esc(S.staffInfo(st.cafe, zone).name) + '</span>' : '') +
-        '<ul class="g-r-items">' + (o.items || []).map(function(i){ var base = String(i.name).replace(/ \(1,5 porsiyon\)$/, ""); return '<li>' + thumb(byName(base).id || i.id, base, "sm") + '<span><b>' + i.qty + '×</b> ' + S.esc(i.name) + '</span></li>'; }).join("") + '</ul>' +
+        '<ul class="g-r-items">' + (o.items || []).map(function(i){ var base = String(i.name).replace(/ \((1,5 porsiyon|Duble)\)$/, ""); return '<li>' + thumb(byName(base).id || i.id, base, "sm") + '<span><b>' + i.qty + '×</b> ' + S.esc(i.name) + '</span></li>'; }).join("") + '</ul>' +
         (o.note ? '<p class="g-note">Not: ' + S.esc(o.note) + '</p>' : '') + contactHtml(o) +
         '<div class="g-ord-foot"><span class="g-chip ' + (done ? "ok" : left < 0 ? "late" : "") + '">' + (done ? "Hazır" : left >= 0 ? "Mutfakta · ~" + left + " dk" : (-left) + " dk gecikti") + '</span><b class="num">' + S.fmt(Number(o.total) || S.sum(o.items)) + '</b></div>' +
         (done ? '<button class="g-btn wide" data-act="served" data-v="' + S.esc(o.id) + '">' + (o.source === "online" ? "Teslim edildi · kapat" : "Servis edildi") + '</button>' : '') + '</article>';
@@ -2194,7 +2201,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
       return '<h2 class="g-h">Mutfaktan hazır <span>' + r.length + '</span></h2>' + r.map(function(o){
         var wait = Math.max(0, Math.round((Date.now() - (o.doneAt || 0)) / 60000));
         return '<article class="g-ready' + (wait >= 5 ? " late" : "") + '"><div class="g-r-top"><b>' + S.esc(S.orderLabel(o)) + '</b><small>' + (wait < 1 ? "şimdi hazırlandı" : wait + " dk önce hazırlandı") + '</small></div>' +
-          '<ul class="g-r-items">' + (o.items || []).map(function(i){ var base = String(i.name).replace(/ \(1,5 porsiyon\)$/, ""); return '<li>' + thumb(byName(base).id || i.id, base, "sm") + '<span><b>' + i.qty + '×</b> ' + S.esc(i.name) + '</span></li>'; }).join("") + '</ul>' +
+          '<ul class="g-r-items">' + (o.items || []).map(function(i){ var base = String(i.name).replace(/ \((1,5 porsiyon|Duble)\)$/, ""); return '<li>' + thumb(byName(base).id || i.id, base, "sm") + '<span><b>' + i.qty + '×</b> ' + S.esc(i.name) + '</span></li>'; }).join("") + '</ul>' +
           (o.note ? '<p class="g-note">Not: ' + S.esc(o.note) + '</p>' : '') +
           contactHtml(o) + '<button class="g-btn wide" data-act="served" data-v="' + S.esc(o.id) + '">' + (o.source === "online" ? "Teslim edildi · kapat" : "Servis edildi") + '</button></article>';
       }).join("");
@@ -2601,7 +2608,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
     "Garson": "Waiter", "garson": "waiter", "Çalışan": "Staff", "çalışan": "staff", "Misafir": "Guest", "Mutfak": "Kitchen", "Yönetim": "Admin", "Sıfırla": "Reset", "Ekranlar": "Screens", "Rapor": "Report",
     "Kurulum": "Setup", "Bölümler": "Sections", "Çıkış": "Log out", "Çıkış yap": "Log out", "Kilitle": "Lock", "Yazdır": "Print", "Tükendi": "Sold out", "Geri aç": "Back on menu", "Geri al": "Undo",
     "kapalı": "closed", "açık": "open", "işletme": "businesses", "İşletme": "Business", "Kategori": "Category", "Sakin": "Calm", "Boş": "Free", "Dolu": "Busy", "Bitti": "Done", "Kaldır": "Remove", "Rol": "Role", "Adı": "Name",
-    "1 porsiyon": "1 portion", "1,5 porsiyon": "1.5 portions", "(1,5 porsiyon)": "(1.5 portions)", "1,5 pors. ₺": "1.5 portions ₺", "Demo sıfırlandı": "Demo reset",
+    "1 porsiyon": "1 portion", "1,5 porsiyon": "1.5 portions", "Duble": "Double", "(Duble)": "(Double)", "Hepsi hazır": "All ready", "(1,5 porsiyon)": "(1.5 portions)", "1,5 pors. ₺": "1.5 portions ₺", "Demo sıfırlandı": "Demo reset",
     /* — alerjenler — */
     "Gluten": "Gluten", "Süt": "Milk", "Yumurta": "Egg", "Kabuklu yemiş": "Tree nuts", "Yer fıstığı": "Peanuts", "Susam": "Sesame", "Soya": "Soy", "Balık": "Fish", "Kabuklu deniz ürünü": "Shellfish", "Hardal": "Mustard", "Kereviz": "Celery",
     /* — giriş — */
