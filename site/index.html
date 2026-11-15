@@ -1465,7 +1465,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
         (cats.length > 1 ? '<nav class="c-chips" aria-label="Kategoriler">' + cats.map(function(c){ return '<button type="button" data-act="cat" data-v="kat-' + S.slugify(c) + '">' + S.esc(c) + '</button>'; }).join("") + '</nav>' : '') +
         '</div></header>' + (st.offline ? '<div class="offline">İnternet bağlantısı yok. Bağlantı gelince siparişinizi gönderebilirsiniz.</div>' : '');
     }
-    function photo(i){ var p = st.photos[i.id]; return S.foodArt(i.name) + (p ? '<img src="' + S.esc(p) + '" alt="' + S.esc(i.name) + '" loading="lazy" onerror="this.remove()">' : ''); }
+    function photo(i){ var p = st.photos[i.id]; return S.foodArt(i.name) + (p ? '<img src="' + S.esc(p) + '" alt="' + S.esc(i.name) + '" decoding="async" onerror="if(this.dataset.r)this.remove();else{this.dataset.r=1;this.src=this.currentSrc||this.src}">' : ''); }
     function stepper(key, name){
       var q = st.cart[key] || 0;
       return '<div class="stepper">' + (q ? '<button class="round" data-act="dec" data-v="' + S.esc(key) + '" aria-label="' + S.esc(name) + ' azalt">−</button><span class="q">' + q + '</span>' : '') +
@@ -2162,7 +2162,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
     /* ---------- görünüm ---------- */
     function thumb(id, name, cls){
       var p = st.photos[id];
-      return '<span class="g-th' + (cls ? " " + cls : "") + '">' + S.foodArt(name) + (p ? '<img src="' + S.esc(p) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</span>';
+      return '<span class="g-th' + (cls ? " " + cls : "") + '">' + S.foodArt(name) + (p ? '<img src="' + S.esc(p) + '" alt="" decoding="async" onerror="if(this.dataset.r)this.remove();else{this.dataset.r=1;this.src=this.currentSrc||this.src}">' : '') + '</span>';
     }
     var byName = function(nm){ return menu().find(function(m){ return m.name === nm; }) || {}; };
     function head(){

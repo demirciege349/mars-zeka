@@ -21,7 +21,7 @@ for d, _, fs in os.walk(ROOT):
         gz = gzip.compress(open(p, "rb").read(), mtime=0); h = hashlib.sha256(gz).hexdigest()
         files[rel] = h; blobs[h] = gz
 print(len(files), "dosya")
-v = call("POST", f"{API}/sites/{SITE}/versions", {"config": {"headers": [{"glob": "**/*.html", "headers": {"Cache-Control": "no-cache"}}]}})
+v = call("POST", f"{API}/sites/{SITE}/versions", {"config": {"headers": [{"glob": "**/*.html", "headers": {"Cache-Control": "no-cache"}}, {"glob": "img/**", "headers": {"Cache-Control": "public, max-age=2592000"}}]}})
 vname = v["name"]
 pop = call("POST", f"{API}/{vname}:populateFiles", {"files": files})
 up = pop.get("uploadUrl")
