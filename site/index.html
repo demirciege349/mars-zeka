@@ -12,6 +12,12 @@
 <link rel="icon" href="garson-icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="garson-icon.svg">
 <title>Mars Zeka · Çalışan</title>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap">
 <style>
@@ -69,6 +75,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-vis
 .login-form{display:flex;flex-direction:column;gap:12px}
 .fld{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:500;letter-spacing:.06em;color:var(--soft);min-width:0}
 .form-err{color:var(--wine);font-weight:500;font-size:.9rem}
+.lg-spin{display:inline-block;width:1em;height:1em;margin-right:.55em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:lgspin .7s linear infinite;vertical-align:-.15em}
+@keyframes lgspin{to{transform:rotate(360deg)}}
 
 /* ---------- müşteri ---------- */
 .c-wrap{max-width:560px;margin:0 auto;padding-inline:16px}
@@ -1145,13 +1153,19 @@ S.loginView = function(title, error, prefill, hint, noCode){
   S.bindLogin = function(B, onError0){
     var onError = function(m){ try { var a = document.activeElement; if (a && a.blur) a.blur(); } catch(x){} onError0(m); };
     var c = S.$("loginCode");
+    var busyBtn = function(form, text){ var b = form && form.querySelector("button[type=submit]"); if (!b) return; b.disabled = true; b.setAttribute("aria-busy", "true"); b.innerHTML = '<span class="lg-spin" aria-hidden="true"></span>' + text; };
+    var known = function(){ try { return JSON.parse(S.lsGet("mz-known-codes") || "[]"); } catch(x){ return []; } };
+    var remember = function(code){ var k = known().filter(function(x){ return x !== code; }); k.unshift(code); S.lsSet("mz-known-codes", JSON.stringify(k.slice(0, 5))); };
     if (c) c.addEventListener("submit", function(e){
       e.preventDefault();
       var code = S.slugify(S.$("lg-code").value || "");
       if (code.length < 2) { onError("İş yeri kodunu yazın."); return; }
+      if (B.prefetchCafe) B.prefetchCafe(code);
+      if (known().indexOf(code) >= 0) { S.lsSet("sirala-cafe-code", code); onError(null); return; }
+      busyBtn(c, "Kontrol ediliyor…");
       (B.cafeExists ? B.cafeExists(code) : Promise.resolve(true)).then(function(ok){
         if (!ok) { onError("Bu kodla bir iş yeri bulunamadı. Patronunuza sorun."); return; }
-        S.lsSet("sirala-cafe-code", code); onError(null);
+        remember(code); S.lsSet("sirala-cafe-code", code); onError(null);
       }).catch(function(err){ onError(S.errText(err)); });
     });
     var ch = document.querySelector("[data-login=change]");
@@ -1161,7 +1175,9 @@ S.loginView = function(title, error, prefill, hint, noCode){
       e.preventDefault();
       var code = S.lsGet("sirala-cafe-code") || "", user = S.$("lg-user").value.trim(), pass = S.$("lg-pass").value;
       if (!user || !pass) { onError("Kullanıcı adı ve şifre gerekli."); return; }
-      B.login(S.userEmail(code, user), pass).catch(function(err){ onError(S.errText(err)); });
+      busyBtn(f, "Giriş yapılıyor…");
+      try { var a = document.activeElement; if (a && a.blur) a.blur(); } catch(x){}
+      B.login(S.userEmail(code, user), pass).then(function(){ if (code) remember(code); }).catch(function(err){ onError(S.errText(err)); });
     });
   };
 
@@ -1271,7 +1287,8 @@ S.loginView = function(title, error, prefill, hint, noCode){
     logout: function(){ return ready.then(function(){ return A.signOut(auth); }); },
 
     watchCafe: function(id, cb, err){ return F.onSnapshot(cafe(id), function(s){ cb(s.exists() ? s.data() : null); }, err || function(){}); },
-    cafeExists: function(id){ return F.getDoc(cafe(id)).then(function(s){ return s.exists(); }); },
+    cafeExists: function(id){ return ready.then(function(){ return F.getDoc(cafe(id)); }).then(function(s){ return s.exists(); }); },
+    prefetchCafe: function(id){ ready.then(function(){ var un = F.onSnapshot(cafe(id), function(){}, function(){}); setTimeout(un, 60000); }).catch(function(){}); },
     createCafe: function(id, data){ return F.setDoc(cafe(id), data); },
     updateCafe: function(id, patch){ return F.updateDoc(cafe(id), patch); },
     listMyCafes: function(email){
@@ -2570,11 +2587,13 @@ S.loginView = function(title, error, prefill, hint, noCode){
     if (cafeUnsub) { cafeUnsub(); cafeUnsub = null; }
     cafeFor = code; CAFE = code;
     if (!USER) { ROLE = null; route(); return; }
-    var first = true;
+    var first = true, rk = "mz-role:" + USER.email, cached = S.lsGet(rk);
+    if (cached) { ROLE = cached; first = false; route(); }
     cafeUnsub = B.watchCafe(code, function(d){
       var r = d && d.staff && d.staff[USER.email] ? d.staff[USER.email].role : null;
+      S.lsSet(rk, r || null);
       if (first || r !== ROLE) { first = false; ROLE = r; route(); }
-    }, function(){ ROLE = null; route(); });
+    }, function(){ S.lsSet(rk, null); ROLE = null; route(); });
   }
   B.onAuth(function(u){
     var nu = u && u.staff ? u : null, changed = !authKnown || (USER && USER.email) !== (nu && nu.email);
