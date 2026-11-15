@@ -199,6 +199,10 @@ main.k-wrap{padding-block:20px 48px}
 .t-time{font-size:.8rem;color:var(--soft);text-align:right}
 .t-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:1rem}
 .t-items b{font-family:var(--f-display);font-size:1.15rem;margin-right:4px}
+.t-it{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.t-it:last-child{border-bottom:0}
+.t-it-ok{flex-shrink:0;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--ok);background:var(--ok-soft);color:var(--ok);font-weight:600;font-size:.85rem}
+.t-it-ok:active{transform:scale(.96)}
 .t-note{background:var(--sand);border-radius:3px;padding:6px 9px;font-size:.88rem}
 .t-eta{font-size:.82rem;color:var(--soft)}
 .t-eta.late{color:var(--red);font-weight:600}
@@ -1761,10 +1765,10 @@ S.loginView = function(title, error, prefill, hint, noCode){
         (nw.length ? '<div class="tickets">' + nw.map(function(o){
           var late = Date.now() > (o.createdAt || 0) + (o.eta || S.DEFAULT_MINS) * 60000;
           return '<article class="ticket' + (late ? " late" : "") + (o.source === "online" ? " online" : "") + '"><div class="t-top"><span class="t-table">' + S.esc(S.orderLabel(o)) + '</span><span class="t-time">' + S.clock(o.createdAt) + '<br>' + (o.source === "garson" ? S.esc(o.byName || "garson") : o.source === "online" ? "online" : "QR") + '</span></div>' +
-            '<ul class="t-items">' + (o.items || []).map(function(i){ return '<li><b>' + i.qty + '×</b>' + S.esc(i.name) + '</li>'; }).join("") + '</ul>' +
+            '<ul class="t-items">' + (o.items || []).map(function(i, k){ return '<li class="t-it"><span><b>' + i.qty + '×</b>' + S.esc(i.name) + '</span>' + ((o.items || []).length > 1 ? '<button class="t-it-ok" data-act="itemReady" data-v="' + S.esc(o.id) + '" data-i="' + k + '" aria-label="' + S.esc(i.name) + ' hazır">Hazır</button>' : '') + '</li>'; }).join("") + '</ul>' +
             (o.note ? '<div class="t-note">Not: ' + S.esc(o.note) + '</div>' : '') + (o.source === "online" && st.contacts[o.id] ? '<div class="t-note">' + S.esc(st.contacts[o.id].name) + ' · ' + S.esc(st.contacts[o.id].phone) + (st.contacts[o.id].address ? '<br>' + S.esc(st.contacts[o.id].address) : '') + '</div>' : '') + etaHtml(o) +
             '<div class="t-left"><span class="small muted">Kaç dk sonra çıkar?</span>' + [5, 10, 15, 20].map(function(x){ return '<button data-act="leftSet" data-v="' + S.esc(o.id) + '" data-m="' + x + '">' + x + '</button>'; }).join("") + '</div>' +
-            '<button class="btn btn-primary" data-act="done" data-v="' + S.esc(o.id) + '">Hazırlandı</button>' +
+            '<button class="btn btn-primary" data-act="done" data-v="' + S.esc(o.id) + '">' + ((o.items || []).length > 1 ? 'Hepsi hazır' : 'Hazırlandı') + '</button>' +
             (st.confirmCancel === o.id
               ? '<div class="t-cancel"><span>İptal edilsin mi? Hesaptan düşer.</span><button class="btn btn-sm btn-bad" data-act="cancelYes" data-v="' + S.esc(o.id) + '">Evet, iptal</button><button class="btn btn-sm" data-act="cancelNo">Vazgeç</button></div>'
               : '<button class="t-cancel-link" data-act="cancelAsk" data-v="' + S.esc(o.id) + '">Siparişi iptal et</button>') + '</article>';
@@ -1935,6 +1939,19 @@ S.loginView = function(title, error, prefill, hint, noCode){
         case "moveTo": { var from = st.moveFrom; st.moveFrom = null;
           B.moveTable(cafeId, String(from), String(v)).then(function(n){ S.toast("Masa " + from + " → Masa " + v + " taşındı (" + n + " sipariş)"); st.openTable = String(v); render(true); }).catch(function(e){ S.toast(S.errText(e)); }); return; }
         case "done": if (o) upd(o, { status: "done", doneAt: Date.now() }); return;
+        case "itemReady": { if (!o || o.status !== "new" || st.busy) return;
+          var k = Number(b.dataset.i), its = (o.items || []).slice(), it = its[k]; if (!it) return;
+          var rest = its.filter(function(_, j){ return j !== k; });
+          if (!rest.length) { upd(o, { status: "done", doneAt: Date.now() }); return; }
+          var part = Object.assign({}, o, { items: [it], total: S.sum([it]), status: "done", doneAt: Date.now(), splitFrom: o.id });
+          delete part.id;
+          st.busy = true;
+          B.addOrder(cafeId, part)
+            .then(function(){ return B.updateOrder(cafeId, o.id, { items: rest, total: S.sum(rest) }); })
+            .then(function(){ S.toast((o.source === "online" ? "" : "Masa " + o.table + " · ") + it.qty + "× " + it.name + " hazır"); })
+            .catch(function(e){ S.toast(S.errText(e)); })
+            .then(function(){ st.busy = false; });
+          return; }
         case "cancelAsk": st.confirmCancel = v; break;
         case "cancelNo": st.confirmCancel = null; break;
         case "cancelYes": st.confirmCancel = null; if (o && o.status === "new") upd(o, { status: "cancelled", cancelledAt: Date.now(), cancelledBy: (st.user && st.user.email) || "" }).then(function(){ S.toast("Masa " + o.table + " siparişi iptal edildi"); }); return;
