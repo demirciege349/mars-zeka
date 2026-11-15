@@ -1183,7 +1183,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
       if (fn.__run) { fn.__run = false; return false; }
       if (sched.indexOf(fn) >= 0) return true;
       sched.push(fn);
-      (window.requestAnimationFrame || setTimeout)(function(){ sched = sched.filter(function(x){ return x !== fn; }); fn.__run = true; try { fn(); } finally { fn.__run = false; } });
+      ((document.visibilityState !== "hidden" && window.requestAnimationFrame) || setTimeout)(function(){ sched = sched.filter(function(x){ return x !== fn; }); fn.__run = true; try { fn(); } finally { fn.__run = false; } });
       return true;
     };
     /* #app içeriği değişmediyse DOM'u yeniden kurma (düğmeler yerinde kalır) */
@@ -2429,7 +2429,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
       if (!alive) return;
       st.user = u && u.staff ? u : null; st.authKnown = true; st.admin = null; st.cafes = null;
       if (!st.user) { render(); return; }
-      B.isAdmin(st.user.email).then(function(ok){ st.admin = ok; render(); if (ok) refresh(); }).catch(function(e){ st.admin = false; st.adminErr = S.errText(e); render(); });
+      B.isAdmin(st.user.email).then(function(ok){ st.admin = ok; try { var a = document.activeElement; if (a && a.blur) a.blur(); } catch(x){} render(true); if (ok) refresh(); }).catch(function(e){ st.admin = false; st.adminErr = S.errText(e); render(); });
     });
 
     function refresh(){
@@ -2460,8 +2460,8 @@ S.loginView = function(title, error, prefill, hint, noCode){
     }
 
     function link(label, href){ return href ? '<a class="btn btn-sm" href="' + S.esc(href) + '" target="_blank" rel="noopener">' + label + '</a>' : ''; }
-    function render(){ if (S.touchBusy(render, false)) return;
-      if (!alive || S.isEditing()) return;
+    function render(force){ if (S.touchBusy(render, force)) return;
+      if (!alive || (!force && S.isEditing())) return;
       var app = S.$("app"), L = ctx.links || function(){ return {}; };
       if (!st.authKnown) { app.innerHTML = '<p class="muted center" style="padding:40px">Yükleniyor…</p>'; return; }
       if (!st.user) { app.innerHTML = S.loginView("Yönetim girişi", st.loginErr, "", ctx.loginHint || "", true); S.bindLogin(B, function(m){ st.loginErr = m; render(); }); return; }
