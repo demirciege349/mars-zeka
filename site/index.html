@@ -83,6 +83,17 @@ input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-vis
 .c-head{background:var(--cream);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:10}
 .c-head-in{display:flex;align-items:center;gap:12px;padding-block:14px 10px}
 .c-name{flex:1;min-width:0;font-family:var(--f-display);font-weight:700;font-size:1.65rem;line-height:1.05;overflow-wrap:anywhere}
+.call-row{padding-bottom:10px}
+.call-btn{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;border:0;border-radius:14px;background:#C9A44C;color:#1A1A1A;padding:10px 16px;text-align:left;font:inherit;box-shadow:0 10px 24px -14px rgba(26,26,26,.6);cursor:pointer}
+.call-btn svg{width:26px;height:26px;flex-shrink:0}
+.call-btn span{display:flex;flex-direction:column;line-height:1.2}
+.call-btn b{font-size:1.08rem;font-weight:600}
+.call-btn small{font-size:.8rem;opacity:.8}
+.call-btn:active{transform:scale(.98)}
+.call-btn.on{background:var(--ink);color:var(--cream);animation:callPulse 1.8s ease-in-out infinite}
+.call-btn.on small{color:#C9A44C;opacity:1}
+@keyframes callPulse{50%{box-shadow:0 0 0 6px rgba(201,164,76,.35)}}
+@media (prefers-reduced-motion:reduce){.call-btn.on{animation:none}}
 .waiter-btn{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;border:1px solid var(--wine);background:var(--white);color:var(--wine);border-radius:999px;padding:7px 12px;font-size:.82rem;font-weight:500;white-space:nowrap}
 .waiter-btn.on{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
 @media (max-width:420px){.c-name{font-size:1.35rem}}
@@ -845,7 +856,25 @@ window.SIRALA_SEED = null;
   S.keepAwake = function(){
     try { if (navigator.wakeLock && !wake && document.visibilityState === "visible") navigator.wakeLock.request("screen").then(function(w){ wake = w; w.addEventListener("release", function(){ wake = null; }); }).catch(function(){}); } catch(e){}
   };
-  S.beep = function(times, freq){
+  /* Telefon bildirimi: uygulama arka plandayken de görünür (servis çalışanı ile) */
+S.canNotify = function(){ try { return "Notification" in window && "serviceWorker" in navigator; } catch(e){ return false; } };
+S.notifyState = function(){ try { return Notification.permission; } catch(e){ return "denied"; } };
+S.swReg = null;
+S.swReady = function(){
+  if (!S.canNotify()) return Promise.resolve(null);
+  if (S.swReg) return Promise.resolve(S.swReg);
+  return navigator.serviceWorker.register("sw.js").then(function(){ return navigator.serviceWorker.ready; }).then(function(r){ S.swReg = r; return r; }).catch(function(){ return null; });
+};
+S.askNotify = function(){
+  if (!S.canNotify()) return Promise.resolve("denied");
+  return S.swReady().then(function(){ return Notification.requestPermission(); });
+};
+S.notify = function(msg){
+  if (!S.canNotify() || S.notifyState() !== "granted") return;
+  S.swReady().then(function(r){ if (r) r.showNotification("Mars Zeka", { body: msg, tag: "mz-" + msg, renotify: true, icon: "garson-icon.svg", badge: "garson-icon.svg", vibrate: [220, 120, 220] }); });
+};
+if (S.canNotify && S.canNotify()) { try { if (Notification.permission === "granted") S.swReady(); } catch(e){} }
+S.beep = function(times, freq){
     try {
       if (!AC) return;
       var t0 = AC.currentTime;
@@ -1458,10 +1487,10 @@ S.loginView = function(title, error, prefill, hint, noCode){
       return '<header class="c-head"><div class="c-wrap"><div class="c-head-in">' +
         (ctx.back ? '<button class="btn btn-sm btn-ghost" data-act="back">‹</button>' : '') +
         '<div class="c-name">' + S.esc((st.cafe && st.cafe.name) || "Menü") + '</div>' +
-        (st.cafeLoaded && st.cafe && !online ? (st.tbl.waiter || st.tbl.billRequested
-          ? '<span class="waiter-btn on" role="status">' + BELL + 'Garson geliyor</span>'
-          : '<button class="waiter-btn" data-act="waiter">' + BELL + 'Garson çağır</button>') : '') +
         '<div class="c-table">' + S.esc(tableLabel) + '</div></div>' +
+        (st.cafeLoaded && st.cafe && !online ? '<div class="call-row">' + (st.tbl.waiter || st.tbl.billRequested
+          ? '<div class="call-btn on" role="status">' + BELL + '<span><b>Garson geliyor</b><small>Çağrınız iletildi</small></span></div>'
+          : '<button class="call-btn" data-act="waiter">' + BELL + '<span><b>Garson çağır</b><small>Bir dokunuşla masanıza gelsin</small></span></button>') + '</div>' : '') +
         (cats.length > 1 ? '<nav class="c-chips" aria-label="Kategoriler">' + cats.map(function(c){ return '<button type="button" data-act="cat" data-v="kat-' + S.slugify(c) + '">' + S.esc(c) + '</button>'; }).join("") + '</nav>' : '') +
         '</div></header>' + (st.offline ? '<div class="offline">İnternet bağlantısı yok. Bağlantı gelince siparişinizi gönderebilirsiniz.</div>' : '');
     }
@@ -2102,6 +2131,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
       S.beep(n, freq);
       try { if (navigator.vibrate) navigator.vibrate([220, 120, 220]); } catch(e){}
       S.toast(msg);
+      S.notify(msg);
     }
 
     /* ---------- veri ---------- */
@@ -2172,6 +2202,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
         '<button class="g-who" data-act="logout">Çıkış</button>' +
         (nCalls ? '<span class="g-pulse">' + nCalls + ' çağrı</span>' : '<span class="g-ok">Sakin</span>') + '</header>' +
         (S.audioReady ? '' : '<button class="g-sound" data-act="sound">' + IC.bell + 'Bildirim sesini ve titreşimi açmak için dokunun</button>') +
+        (S.canNotify() && S.notifyState() === "default" ? '<button class="g-sound g-notif" data-act="notifOn">' + IC.bell + 'Telefona bildirim gelsin: dokunup izin verin</button>' : '') +
         (!navigator.onLine || st.fromCache ? '<div class="offline">İnternet yok. Liste son hâliyle duruyor.</div>' : '');
     }
     function contactHtml(o){
@@ -2430,6 +2461,7 @@ S.loginView = function(title, error, prefill, hint, noCode){
         case "dec": if (st.wCart[v]) { st.wCart[v]--; if (!st.wCart[v]) delete st.wCart[v]; } break;
         case "send": send(); return;
         case "sound": S.beep(1, 660); try { if (navigator.vibrate) navigator.vibrate(80); } catch(x){} break;
+        case "notifOn": S.askNotify().then(function(p){ S.toast(p === "granted" ? "Bildirimler açık" : "Bildirim izni verilmedi"); render(true); }); break;
         case "logout": unsubs.forEach(function(u){ try { u(); } catch(x){} }); unsubs = []; st.cafe = null; st.cafeLoaded = false; st.tab = "gelen"; B.logout(); return;
       }
       render(true);
