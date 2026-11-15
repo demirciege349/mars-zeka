@@ -383,6 +383,11 @@ body.g-body{background:var(--cream)}
 .g-ci{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,#C9A44C 24%,#F8F4EC);color:#1A1A1A}
 .g-call.bill .g-ci{background:var(--warn-soft);color:var(--wine)}
 .g-call b{display:block;font-size:1.05rem}.g-call small{color:var(--soft);font-size:.82rem}
+.g-call.wait{grid-template-columns:56px minmax(0,1fr) auto;padding:16px;border-left-width:8px;background:#FFF7DF;border-color:#C9A44C;animation:gcall 1.2s ease-in-out infinite}
+.g-call.wait .g-ci{width:56px;height:56px;background:#C9A44C;color:#1A1A1A}
+.g-call.wait b{font-size:1.25rem}.g-call.wait small{font-size:.95rem;color:#5A4A1E;font-weight:600}
+.g-call.wait .g-btn{min-height:48px;padding:0 18px;font-size:1rem}
+@keyframes gcall{50%{box-shadow:0 0 0 6px rgba(201,164,76,.35)}}
 .g-btn{min-height:44px;padding:0 16px;border-radius:8px;border:0;background:var(--wine);color:#F8F4EC;font:inherit;font-weight:500;font-size:.92rem;cursor:pointer}
 .g-btn.wide{width:100%}
 .g-btn:active{transform:scale(.98)}
